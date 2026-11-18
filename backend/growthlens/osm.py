@@ -115,6 +115,31 @@ def count_per_hex(
     return dict(out)
 
 
+MAX_DRIVER_PLACES = 6000
+
+
+def collect_places(elements: list[dict], comp_w: dict, dem_w: dict, hexset: set[str], resolution: int) -> dict:
+    """Compact place lists for the UI's "nearby" panels: [lat, lon, name|None(, label)] per place."""
+    competitors: list[list] = []
+    drivers: list[list] = []
+    for el in elements:
+        pos = element_latlon(el)
+        if pos is None or point_to_hex(pos[0], pos[1], resolution) not in hexset:
+            continue
+        tags = el.get("tags", {})
+        name = tags.get("name")
+        lat, lon = round(pos[0], 5), round(pos[1], 5)
+        if any(matches(el, t) for t in comp_w):
+            competitors.append([lat, lon, name])
+            continue
+        for key, value in dem_w:
+            if matches(el, (key, value)):
+                if len(drivers) < MAX_DRIVER_PLACES:
+                    drivers.append([lat, lon, name, (value or tags.get(key, key)).replace("_", " ")])
+                break
+    return {"competitors": competitors, "drivers": drivers}
+
+
 def osm_metrics(bbox, hexes: list[str], profile: dict, resolution: int) -> dict:
     """Returns competitor/demand/access counts per hex plus a data-quality summary."""
     hexset = set(hexes)
@@ -132,6 +157,7 @@ def osm_metrics(bbox, hexes: list[str], profile: dict, resolution: int) -> dict:
     # Thin-coverage heuristic: share of hexes with any mapped amenity at all.
     covered = len(set(competitors) | set(demand) | set(access))
     return {
+        "places": collect_places(elements, comp_w, dem_w, hexset, resolution),
         "competitors": competitors,
         "demand": demand,
         "access": access,

@@ -31,7 +31,18 @@ export interface Intent {
   source: "llm" | "preset";
 }
 
+export type Weights = Record<Metric, number>;
+export type Layer = "opportunity" | "growth" | "activity" | "competitors" | "demand";
+
+/** Compact place lists: [lat, lon, name] for competitors, [lat, lon, name, kind] for demand drivers. */
+export interface Places {
+  competitors: [number, number, string | null][];
+  drivers: [number, number, string | null, string][];
+}
+
 export interface AnalysisResult {
+  id: string;
+  schema: number;
   city: {
     name: string;
     display_name: string;
@@ -45,11 +56,26 @@ export interface AnalysisResult {
   intent: Intent;
   weights: Record<Metric, number>;
   data_quality: { osm_coverage: number; n_competitors: number; flags: string[] };
-  windows: { growth: [number, number]; viirs: [string, string] };
+  windows: { growth: [number, number]; viirs: [string, string]; imagery?: [number, number] };
   disclaimer: string;
   generated_at: string;
   top10: string[];
+  places: Places;
   hexes: HexRow[];
+}
+
+export interface Brief {
+  why_here: string;
+  risks: string;
+  suggested_format: string;
+  source: "llm" | "template";
+}
+
+export interface HistoryStatus {
+  state: "idle" | "running" | "done" | "error";
+  progress?: number;
+  error?: string;
+  data?: { years: number[]; values: Record<string, (number | null)[]> };
 }
 
 export type StepState = "pending" | "active" | "done" | "error" | "skipped";
@@ -71,6 +97,7 @@ export interface JobStatus {
   warning: string | null;
   meta: { boundary?: Geometry; center?: [number, number] };
   error: string | null;
+  result_id: string | null;
 }
 
 export interface CityOption {
@@ -79,3 +106,6 @@ export interface CityOption {
   lat: number;
   lon: number;
 }
+
+/** An area as shown in the UI: re-scored for the current weights, always with a display name. */
+export type ViewRow = HexRow & { name: string; reason?: string };

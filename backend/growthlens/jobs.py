@@ -15,7 +15,7 @@ from .config import settings
 from .geocode import GeocodeError
 from .intent import parse_intent
 from .osm import OverpassError
-from .pipeline import run_pipeline, save_result, slug
+from .pipeline import SCHEMA_VERSION, run_pipeline, save_result, slug
 
 STEPS = [
     ("intent", "Understanding your business"),
@@ -47,6 +47,7 @@ class Job:
     meta: dict = field(default_factory=dict)  # boundary / center once known
     error: str | None = None
     result_path: Path | None = None
+    result_id: str | None = None
     created: float = field(default_factory=time.time)
 
     def public(self) -> dict:
@@ -54,7 +55,7 @@ class Job:
             "id": self.id, "city": self.city, "query": self.query, "status": self.status,
             "steps": [{"id": s, "label": l, "state": self.steps[s]} for s, l in STEPS],
             "message": self.message, "intent": self.intent, "warning": self.warning,
-            "meta": self.meta, "error": self.error,
+            "meta": self.meta, "error": self.error, "result_id": self.result_id,
         }
 
 
@@ -91,11 +92,12 @@ def _run(job: Job) -> None:
         job.intent, job.warning = intent.model_dump(), warning
 
         path = result_path(job.city, job.intent, intent.category_key)
-        if path.exists():  # per (city, intent) cache: repeat searches are instant
-            data = json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+        if data is not None and data.get("schema", 1) >= SCHEMA_VERSION:  # per (city, intent) cache: repeat searches are instant
             job.meta = {"boundary": data["city"]["boundary"], "center": [data["city"]["lat"], data["city"]["lon"]]}
             job.steps = {s: "done" for s in _ORDER}
-            job.result_path, job.status, job.message = path, "done", "Loaded from cache"
+            job.result_path, job.result_id = path, path.stem
+            job.status, job.message = "done", "Loaded from cache"
             return
 
         def on_progress(step: str, msg: str, meta: dict | None) -> None:
@@ -108,6 +110,7 @@ def _run(job: Job) -> None:
         if warning:
             result["data_quality"]["flags"].append("intent_fallback_preset")
         job.result_path = save_result(result, path)
+        job.result_id = job.result_path.stem
         for s in _ORDER:
             if job.steps[s] != "skipped":
                 job.steps[s] = "done"

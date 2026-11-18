@@ -42,6 +42,8 @@ interface Props {
   boundary?: Geometry | null;
   center?: [number, number] | null; // [lat, lon]
   hexes?: HexRow[];
+  /** 0–1 colour value per hex for the active layer / year */
+  values?: Map<string, number>;
   hoveredHex?: string | null;
   selectedHex?: string | null;
   padding: MapPadding;
@@ -54,6 +56,7 @@ export default function MapView({
   boundary,
   center,
   hexes,
+  values,
   hoveredHex,
   selectedHex,
   padding,
@@ -107,17 +110,6 @@ export default function MapView({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only react to selection changes
   }, [selectedHex]);
 
-  const { min, span } = useMemo(() => {
-    if (!hexes?.length) return { min: 0, span: 1 };
-    let lo = Infinity;
-    let hi = -Infinity;
-    for (const h of hexes) {
-      lo = Math.min(lo, h.score);
-      hi = Math.max(hi, h.score);
-    }
-    return { min: lo, span: Math.max(hi - lo, 1e-6) };
-  }, [hexes]);
-
   const top = useMemo(() => (hexes ?? []).filter((h) => h.rank !== null).sort((a, b) => a.rank! - b.rank!), [hexes]);
   const emphasised = useMemo(
     () =>
@@ -135,13 +127,13 @@ export default function MapView({
         id: "heat",
         data: hexes,
         getHexagon: (d) => d.hex,
-        getFillColor: (d) => scoreColor((d.score - min) / span, 175),
+        getFillColor: (d) => scoreColor(values?.get(d.hex) ?? 0, 175),
         extruded: false,
         stroked: false,
         pickable: true,
         onHover: (info) => onHover?.(info.object ? (info.object as HexRow).hex : null),
         onClick: (info) => onSelect?.(info.object ? (info.object as HexRow).hex : null),
-        updateTriggers: { getFillColor: [min, span] },
+        updateTriggers: { getFillColor: [values] },
       }),
       new H3HexagonLayer<HexRow>({
         id: "top-outline",
@@ -182,7 +174,7 @@ export default function MapView({
         onClick: (info) => onSelect?.(info.object ? (info.object as HexRow).hex : null),
       }),
     ];
-  }, [mode, hexes, top, emphasised, min, span, hoveredHex, selectedHex, onHover, onSelect]);
+  }, [mode, hexes, values, top, emphasised, hoveredHex, selectedHex, onHover, onSelect]);
 
   const getTooltip = useCallback(
     ({ object }: { object?: unknown }) => {

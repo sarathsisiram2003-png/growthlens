@@ -1,4 +1,4 @@
-import type { AnalysisResult, CityOption, JobStatus } from "./types";
+import type { AnalysisResult, Brief, CityOption, HistoryStatus, JobStatus } from "./types";
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -68,3 +68,16 @@ export async function searchCities(q: string, signal?: AbortSignal): Promise<Cit
       return true;
     });
 }
+
+export const getBrief = (resultId: string, hex: string) =>
+  request<Brief>(`/results/${resultId}/brief/${hex}`, undefined, 90_000); // the LLM can be slow
+
+export const startHistory = (resultId: string) =>
+  request<HistoryStatus>(`/results/${resultId}/history`, { method: "POST" });
+
+export const getHistory = (resultId: string) => request<HistoryStatus>(`/results/${resultId}/history`, undefined, 60_000);
+
+export const getAreaName = (lat: number, lon: number) =>
+  request<{ name: string | null }>(`/area-name?lat=${lat}&lon=${lon}`, undefined, 30_000);
+
+export const imageryUrl = (hex: string, year: number) => `${API_URL}/imagery/${hex}?year=${year}`;

@@ -32,3 +32,11 @@ def hex_centre(cell: str) -> tuple[float, float]:
 
 def point_to_hex(lat: float, lon: float, resolution: int = 8) -> str:
     return h3.latlng_to_cell(lat, lon, resolution)
+
+
+def is_hex(cell: str, resolution: int | None = None) -> bool:
+    """True for a valid H3 cell (optionally of the given resolution)."""
+    try:
+        return h3.is_valid_cell(cell) and (resolution is None or h3.get_resolution(cell) == resolution)
+    except (ValueError, TypeError):
+        return False

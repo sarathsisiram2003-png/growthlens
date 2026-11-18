@@ -7,6 +7,7 @@ from growthlens import jobs as jobs_mod
 from growthlens.api import app
 from growthlens.geocode import GeocodeError
 from growthlens.intent import intent_from_preset
+from growthlens.pipeline import SCHEMA_VERSION
 from growthlens.reasons import build_reason
 
 client = TestClient(app)
@@ -45,7 +46,7 @@ def fake_pipeline(monkeypatch, tmp_path):
         calls.append(city)
         for step in ("map", "satellite", "competitors", "scoring", "briefs"):
             progress(step, f"doing {step}", {"boundary": {"type": "Polygon", "coordinates": []}, "center": [1, 2]} if step == "map" else None)
-        return {"city": {"name": city, "lat": 1, "lon": 2, "boundary": {}}, "category": "cafe", "data_quality": {"flags": []}, "hexes": []}
+        return {"schema": SCHEMA_VERSION, "city": {"name": city, "lat": 1, "lon": 2, "boundary": {}}, "category": "cafe", "data_quality": {"flags": []}, "hexes": []}
 
     monkeypatch.setattr(jobs_mod, "run_pipeline", fake_run)
     return calls
@@ -109,3 +110,20 @@ def test_validation_rejects_short_input():
 def test_cors_allows_frontend_origin():
     r = client.options("/jobs", headers={"Origin": "http://localhost:3000", "Access-Control-Request-Method": "POST"})
     assert r.headers.get("access-control-allow-origin") == "http://localhost:3000"
+
+
+def test_outdated_cached_result_is_recomputed(fake_pipeline):
+    st = wait_done(client.post("/jobs", json={"city": "Oldville", "query": "cafe"}).json()["id"])
+    path = jobs_mod.get_job(st["id"]).result_path
+    import json
+
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["schema"] = SCHEMA_VERSION - 1  # simulate a file written by an older version
+    path.write_text(json.dumps(data), encoding="utf-8")
+    wait_done(client.post("/jobs", json={"city": "Oldville", "query": "cafe"}).json()["id"])
+    assert fake_pipeline.count("Oldville") == 2
+
+
+def test_done_job_exposes_result_id(fake_pipeline):
+    st = wait_done(client.post("/jobs", json={"city": "Idtown", "query": "cafe"}).json()["id"])
+    assert st["result_id"] and st["result_id"].startswith("idtown_cafe_")

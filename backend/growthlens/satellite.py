@@ -5,6 +5,7 @@
 Earth Engine is used under non-commercial terms for this portfolio project.
 """
 import hashlib
+import threading
 from collections.abc import Callable
 
 import ee
@@ -23,21 +24,30 @@ class EarthEngineError(RuntimeError):
     pass
 
 
+_init_lock = threading.Lock()
+_initialised = False
+
+
 def init_ee() -> None:
     """Initialise EE with a service account key if configured, else cached `earthengine authenticate` login."""
+    global _initialised
     s = settings
-    if not s.ee_project:
-        raise EarthEngineError("EE_PROJECT is not set in backend/.env")
-    try:
-        if s.ee_service_account_key and s.ee_service_account_email:
-            creds = ee.ServiceAccountCredentials(s.ee_service_account_email, s.ee_service_account_key)
-            ee.Initialize(creds, project=s.ee_project)
-        else:
-            ee.Initialize(project=s.ee_project)
-    except Exception as e:  # noqa: BLE001 - surface any auth/project error clearly
-        raise EarthEngineError(
-            f"Earth Engine init failed ({e}). Run `earthengine authenticate` or set service-account vars."
-        ) from e
+    with _init_lock:
+        if _initialised:
+            return
+        if not s.ee_project:
+            raise EarthEngineError("EE_PROJECT is not set in backend/.env")
+        try:
+            if s.ee_service_account_key and s.ee_service_account_email:
+                creds = ee.ServiceAccountCredentials(s.ee_service_account_email, s.ee_service_account_key)
+                ee.Initialize(creds, project=s.ee_project)
+            else:
+                ee.Initialize(project=s.ee_project)
+        except Exception as e:  # noqa: BLE001 - surface any auth/project error clearly
+            raise EarthEngineError(
+                f"Earth Engine init failed ({e}). Run `earthengine authenticate` or set service-account vars."
+            ) from e
+        _initialised = True
 
 
 def _hex_collection(cells: list[str]) -> ee.FeatureCollection:

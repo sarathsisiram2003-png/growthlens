@@ -9,7 +9,8 @@
     "lint": "eslint",
     "predev": "node scripts/copy-maplibre.mjs",
     "prebuild": "node scripts/copy-maplibre.mjs",
-    "postinstall": "node scripts/copy-maplibre.mjs"
+    "postinstall": "node scripts/copy-maplibre.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
@@ -20,6 +21,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "deck.gl": "^9.4.1",
+    "h3-js": "^4.5.0",
     "lucide-react": "^1.74.0",
     "maplibre-gl": "^6.19.0",
     "next": "16.4.6",
@@ -33,12 +35,13 @@
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "4.3.3",
-    "@types/node": "^20",
+    "@types/node": "^22.20.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
     "tailwindcss": "4.3.3",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.1.0"
   }
 }

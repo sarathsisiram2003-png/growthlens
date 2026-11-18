@@ -18,6 +18,8 @@ from .scoring import METRICS, score_hexes, top_n
 
 # progress(step, message, meta). Steps: map, satellite, competitors, scoring, briefs.
 # meta may carry {"state": "skipped"} or {"boundary": geojson, "center": [lat, lon]}.
+SCHEMA_VERSION = 2  # bump when the result JSON gains fields the UI needs (invalidates cached files)
+
 Progress = Callable[[str, str, dict | None], None]
 
 
@@ -110,6 +112,7 @@ def run_pipeline(
             "name": city.name, "display_name": city.display_name, "lat": city.lat, "lon": city.lon,
             "bbox": [minx, miny, maxx, maxy], "boundary": boundary_geojson,
         },
+        "schema": SCHEMA_VERSION,
         "category": intent.category_key,
         "label": profile["label"],
         "intent": intent.model_dump(),
@@ -118,11 +121,13 @@ def run_pipeline(
         "windows": {
             "growth": [settings.growth_start_year, settings.growth_end_year],
             "viirs": [settings.viirs_start, settings.viirs_end],
+            "imagery": [settings.imagery_start_year, settings.imagery_end_year],
         },
         "data_quality": {"osm_coverage": round(osm["coverage"], 3), "n_competitors": osm["n_competitors"], "flags": flags},
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "disclaimer": "Scores are relative to this city and rank areas; they are not a guarantee of success.",
         "top10": top,
+        "places": osm["places"],
         "hexes": hexes_out,
     }
 
@@ -130,5 +135,6 @@ def run_pipeline(
 def save_result(result: dict, out: Path | None = None) -> Path:
     path = out or settings.output_dir / f"{slug(result['city']['name'])}_{result['category']}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(result, indent=1), encoding="utf-8")
+    result["id"] = path.stem  # lets the UI address this result for briefs, imagery history, etc.
+    path.write_text(json.dumps(result, separators=(",", ":")), encoding="utf-8")
     return path

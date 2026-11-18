@@ -6,16 +6,14 @@ If the LLM is unavailable, refuses, or returns something invalid, we fall back t
 preset so the app never fails because of this step.
 """
 import hashlib
-import json
 import re
 from typing import Literal
 
-from google import genai
-from google.genai import types
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from . import cache
 from .config import settings
+from .llm import generate_json
 from .profiles import PRESETS, match_preset
 from .scoring import validate_weights
 
@@ -151,25 +149,8 @@ def _cache_key(text: str) -> str:
 
 
 def _call_llm(text: str) -> Intent:
-    client = genai.Client(
-        api_key=settings.gemini_api_key,
-        http_options=types.HttpOptions(timeout=60_000, retry_options=types.HttpRetryOptions(attempts=3)),
-    )
-    resp = client.models.generate_content(
-        model=settings.llm_model,
-        contents=f"Business idea: {text}",
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
-            temperature=0.2,
-            max_output_tokens=4000,
-            response_mime_type="application/json",
-            response_json_schema=IntentCore.model_json_schema(),
-        ),
-    )
-    if not resp.text:
-        reason = resp.candidates[0].finish_reason if resp.candidates else "no candidates"
-        raise ValueError(f"LLM returned no output ({reason})")
-    return Intent.model_validate({**json.loads(resp.text), "source": "llm"})
+    raw = generate_json(SYSTEM_PROMPT, f"Business idea: {text}", IntentCore.model_json_schema())
+    return Intent.model_validate({**raw, "source": "llm"})
 
 
 def parse_intent(text: str, use_llm: bool = True) -> tuple[Intent, str | None]:
@@ -179,6 +160,7 @@ def parse_intent(text: str, use_llm: bool = True) -> tuple[Intent, str | None]:
         raise ValueError("Please describe the business you want to open")
     if len(text) > 300:
         text = text[:300]
+    use_llm = use_llm and settings.intent_use_llm
 
     if use_llm and settings.gemini_api_key:
         cached = cache.get(_cache_key(text), INTENT_CACHE_AGE)

@@ -141,3 +141,29 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* Print: only the report (id="report-root") is shown; the app shell is hidden. "Save as PDF" in the print dialog produces the file. */
+#report-root {
+  display: none;
+}
+@media print {
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  #report-root {
+    display: block;
+  }
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  @page {
+    margin: 12mm;
+  }
+}

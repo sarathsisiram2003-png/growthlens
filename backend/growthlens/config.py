@@ -16,8 +16,15 @@ class Settings(BaseSettings):
     # LLM intent parsing (Google Gemini). Empty key -> offline preset fallback.
     gemini_api_key: str = ""
     llm_model: str = "gemini-3.5-flash-lite"
+    # Set INTENT_USE_LLM=false to parse businesses with keyword presets only (briefs still use the LLM).
+    intent_use_llm: bool = True
 
     h3_resolution: int = 8
+    # Before/after satellite imagery (Sentinel-2 annual median composites)
+    imagery_start_year: int = 2017
+    imagery_end_year: int = 2025
+    # Growth history for the time slider (Dynamic World annual mean built-up probability)
+    history_start_year: int = 2016
     # Growth window (Dynamic World built-up probability, annual means)
     growth_start_year: int = 2021
     growth_end_year: int = 2024

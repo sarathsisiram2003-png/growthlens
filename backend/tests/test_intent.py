@@ -186,3 +186,11 @@ def test_any_exception_type_falls_back(monkeypatch):
     monkeypatch.setattr(intent_mod, "_call_llm", boom)
     i, warn = parse_intent("budget gym")
     assert i.source == "preset" and "Httpx2ReadError" in warn
+
+
+def test_intent_llm_can_be_disabled_by_setting(monkeypatch):
+    monkeypatch.setattr(intent_mod.settings, "gemini_api_key", "k")
+    monkeypatch.setattr(intent_mod.settings, "intent_use_llm", False)
+    monkeypatch.setattr(intent_mod, "_call_llm", lambda t: (_ for _ in ()).throw(AssertionError("LLM must not be called")))
+    i, warn = parse_intent("budget gym")
+    assert i.source == "preset" and warn is None

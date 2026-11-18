@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil } from "lucide-react";
+import { GitCompareArrows, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -8,9 +8,11 @@ interface Props {
   title?: string; // e.g. "Bengaluru · specialty café"
   onHome: () => void;
   onEdit?: () => void;
+  compareCount?: number;
+  onCompare?: () => void;
 }
 
-export default function TopBar({ title, onHome, onEdit }: Props) {
+export default function TopBar({ title, onHome, onEdit, compareCount = 0, onCompare }: Props) {
   return (
     <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center gap-2 p-3">
       <button
@@ -27,6 +29,19 @@ export default function TopBar({ title, onHome, onEdit }: Props) {
         </div>
       )}
       <div className="pointer-events-auto ml-auto flex items-center gap-2">
+        {compareCount > 0 && onCompare && (
+          <Button
+            variant="outline"
+            className="glass h-11 px-3"
+            disabled={compareCount < 2}
+            aria-label={compareCount < 2 ? "Compare: add one more area" : `Compare ${compareCount} areas`}
+            onClick={onCompare}
+          >
+            <GitCompareArrows aria-hidden />
+            <span className="tabular-nums">{compareCount}</span>
+            <span className="hidden sm:inline">{compareCount < 2 ? "Add one more" : "Compare"}</span>
+          </Button>
+        )}
         {onEdit && (
           <Button variant="outline" className="glass h-11 px-4" aria-label="Edit search" onClick={onEdit}>
             <Pencil aria-hidden /> <span className="hidden sm:inline">Edit search</span>
