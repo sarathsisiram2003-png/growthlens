@@ -1,17 +1,19 @@
 # Render blueprint for the API. The frontend deploys separately on Vercel (see docs/DEPLOY.md).
+#
+# Free plan, no persistent disk: results, caches and the job database live in the container and are wiped on every
+# deploy/restart (free services also sleep after ~15 min idle, so the first request after a pause is slow). The demo
+# cities always work because they ship in the repository and are reinstalled at every start.
+# To keep results across restarts: set `plan: starter` and add
+#   disk: { name: growthlens-data, mountPath: /data, sizeGB: 2 }
 services:
   - type: web
     name: growthlens-api
     runtime: docker
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
-    plan: starter            # a persistent disk needs a paid plan; see docs/DEPLOY.md for the free-tier trade-off
+    plan: free
     healthCheckPath: /health
     autoDeploy: true
-    disk:
-      name: growthlens-data
-      mountPath: /data
-      sizeGB: 2
     envVars:
       - key: DATA_DIR
         value: /data

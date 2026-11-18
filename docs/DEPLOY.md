@@ -31,7 +31,7 @@ Check it locally first if you like: put the JSON on one line in `backend/.env` a
 ## 2. Backend on Render
 
 1. **New → Blueprint**, pick the repo. Render reads [`render.yaml`](../render.yaml): a Docker web service built from `backend/Dockerfile`,
-   health check `/health`, and a **2 GB persistent disk at `/data`**.
+   health check `/health`, on the **free plan with no persistent disk** (see the trade-off below).
 2. Fill the variables marked `sync: false`:
    - `EE_PROJECT` – your Earth Engine Cloud project id
    - `EE_SERVICE_ACCOUNT_JSON` – the key JSON from step 1
@@ -46,7 +46,7 @@ Check it locally first if you like: put the JSON on one line in `backend/.env` a
 A persistent disk needs a paid plan. On a free instance (no disk) the service still works, but results, caches and the job
 database are wiped on every deploy and restart (and free instances sleep when idle, so the first request after a pause is slow).
 The **demo cities keep working** because they are reinstalled from the repository at every start; new searches are simply recomputed
-and take a minute or two. For a portfolio demo that is a reasonable default; remove the `disk:` block and set `plan: free` to use it.
+and take a minute or two. For a portfolio demo that is a reasonable default; this is the default in `render.yaml`. To keep results across restarts, switch to `plan: starter` and add the `disk:` block shown in the file comments.
 
 ## 3. Frontend on Vercel
 
