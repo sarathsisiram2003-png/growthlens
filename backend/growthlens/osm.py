@@ -5,17 +5,22 @@ import time
 from collections import defaultdict
 
 import httpx
-from tenacity import retry, stop_after_attempt, wait_exponential
 
 from . import cache
 from .config import settings
 from .grid import point_to_hex
 
+# Public mirrors, tried in rotation. The main server is often at capacity.
 OVERPASS_URLS = [
     "https://overpass-api.de/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",
+    "https://maps.mail.ru/osm/tools/overpass/api/interpreter",
 ]
 CACHE_MAX_AGE = 7 * 24 * 3600
+REQUEST_TIMEOUT_S = 100  # client-side; the query itself is limited to 90s server-side
+DEADLINE_S = 240  # give up (or fall back to stale cache) after this long overall
+ROUNDS = 3
 Tag = tuple[str, str | None]
 
 
@@ -32,34 +37,50 @@ def build_query(bbox: tuple[float, float, float, float], tags: list[Tag]) -> str
     """bbox = (south, west, north, east)."""
     s, w, n, e = bbox
     parts = "".join(f"nwr{_tag_filter(t)}({s},{w},{n},{e});" for t in tags)
-    return f"[out:json][timeout:120];({parts});out center tags;"
+    return f"[out:json][timeout:90];({parts});out center tags;"
 
 
-@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=5, max=60), reraise=True)
-def _post(url: str, query: str) -> dict:
-    r = httpx.post(url, data={"data": query}, headers={"User-Agent": settings.http_user_agent}, timeout=180)
-    if r.status_code in (429, 504):
-        raise httpx.HTTPError(f"Overpass busy ({r.status_code})")
+def _post(url: str, query: str) -> list[dict]:
+    r = httpx.post(url, data={"data": query}, headers={"User-Agent": settings.http_user_agent}, timeout=REQUEST_TIMEOUT_S)
     r.raise_for_status()
-    return r.json()
+    data = r.json()
+    # Overpass can answer 200 with a partial result and a "remark" when it ran out of time or memory.
+    remark = str(data.get("remark", ""))
+    if "error" in remark.lower() or "timed out" in remark.lower():
+        raise OverpassError(f"Overpass returned a partial result: {remark[:120]}")
+    return data.get("elements", [])
 
 
 def fetch_elements(bbox: tuple[float, float, float, float], tags: list[Tag]) -> list[dict]:
+    """One Overpass request for all tags, with mirror rotation, a hard deadline and a stale-cache fallback."""
     query = build_query(bbox, tags)
     key = "overpass:" + hashlib.sha1(query.encode()).hexdigest()
     cached = cache.get(key, CACHE_MAX_AGE)
     if cached is not None:
         return cached
+
+    start = time.time()
     last: Exception | None = None
-    for url in OVERPASS_URLS:
-        try:
-            data = _post(url, query)
-            elements = data.get("elements", [])
+    for round_ in range(ROUNDS):
+        for url in OVERPASS_URLS:
+            if time.time() - start > DEADLINE_S:
+                break
+            try:
+                elements = _post(url, query)
+            except (httpx.HTTPError, ValueError, OverpassError) as e:  # ValueError covers bad JSON
+                last = e
+                continue
             cache.put(key, elements)
-            time.sleep(1)  # be polite between queries
             return elements
-        except (httpx.HTTPError, json.JSONDecodeError) as e:
-            last = e
+        else:
+            if round_ < ROUNDS - 1:
+                time.sleep(min(5 * 2**round_, 20))  # all mirrors failed this round; back off
+            continue
+        break  # deadline hit
+
+    stale = cache.get(key)  # any age: old data beats no data
+    if stale is not None:
+        return stale
     raise OverpassError(f"All Overpass endpoints failed: {last}")
 
 
@@ -101,13 +122,12 @@ def osm_metrics(bbox, hexes: list[str], profile: dict, resolution: int) -> dict:
     acc_w = {t: 1.0 for t in profile["access"]}
     dem_w = profile["demand"]
 
-    comp = fetch_elements(bbox, list(comp_w))
-    dem = fetch_elements(bbox, list(dem_w))
-    acc = fetch_elements(bbox, list(acc_w))
+    all_tags = list(dict.fromkeys([*comp_w, *dem_w, *acc_w]))  # unique, order kept
+    elements = fetch_elements(bbox, all_tags)  # a single request; each count below ignores non-matching places
 
-    competitors = count_per_hex(comp, comp_w, hexset, resolution)
-    demand = count_per_hex(dem, dem_w, hexset, resolution)
-    access = count_per_hex(acc, acc_w, hexset, resolution)
+    competitors = count_per_hex(elements, comp_w, hexset, resolution)
+    demand = count_per_hex(elements, dem_w, hexset, resolution)
+    access = count_per_hex(elements, acc_w, hexset, resolution)
 
     # Thin-coverage heuristic: share of hexes with any mapped amenity at all.
     covered = len(set(competitors) | set(demand) | set(access))
@@ -116,5 +136,5 @@ def osm_metrics(bbox, hexes: list[str], profile: dict, resolution: int) -> dict:
         "demand": demand,
         "access": access,
         "coverage": covered / max(len(hexes), 1),
-        "n_competitors": len(comp),
+        "n_competitors": sum(1 for el in elements if any(matches(el, t) for t in comp_w)),
     }

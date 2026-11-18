@@ -6,14 +6,23 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from .config import settings
-from .geocode import geocode_city
+from shapely.geometry import mapping
+
+from .geocode import geocode_city, reverse_area
 from .grid import city_hexes, hex_centre
 from .intent import Intent
 from .osm import osm_metrics
-from .satellite import satellite_metrics
+from .reasons import build_reason
+from .satellite import EarthEngineError, satellite_metrics
 from .scoring import METRICS, score_hexes, top_n
 
-Progress = Callable[[str], None]
+# progress(step, message, meta). Steps: map, satellite, competitors, scoring, briefs.
+# meta may carry {"state": "skipped"} or {"boundary": geojson, "center": [lat, lon]}.
+Progress = Callable[[str, str, dict | None], None]
+
+
+def _noop(_step: str, _msg: str, _meta: dict | None = None) -> None:
+    pass
 
 
 def slug(text: str) -> str:
@@ -24,40 +33,46 @@ def run_pipeline(
     city_name: str, intent: Intent, weights: dict[str, float] | None = None, progress: Progress | None = None,
     skip_satellite: bool = False,
 ) -> dict:
-    say = progress or (lambda _m: None)
+    say = progress or _noop
     profile = intent.to_profile()
     weights = weights or profile["weights"]
     res = settings.h3_resolution
 
-    say("1/5 Geocoding city")
+    say("map", "Geocoding city", None)
     city = geocode_city(city_name)
     minx, miny, maxx, maxy = city.boundary.bounds
     bbox = (miny, minx, maxy, maxx)  # south, west, north, east
+    boundary_geojson = mapping(city.boundary.simplify(0.0008))
+    say("map", "City boundary found", {"boundary": boundary_geojson, "center": [city.lat, city.lon]})
 
-    say("2/5 Building H3 grid")
     cells = city_hexes(city.boundary, res)
     if not cells:
         raise RuntimeError("City boundary produced no hexagons")
-    say(f"  {len(cells)} hexes at resolution {res}")
-
-    say("3/5 Reading OpenStreetMap (competitors, demand, access)")
-    osm = osm_metrics(bbox, cells, profile, res)
+    say("map", f"{len(cells)} hexes at resolution {res}", None)
 
     flags: list[str] = []
-    if osm["coverage"] < 0.25:
-        flags.append("thin_osm_coverage")
-
     if skip_satellite:
-        say("4/5 Skipping satellite data (--skip-satellite)")
+        say("satellite", "Skipping satellite data", {"state": "skipped"})
         sat = {"growth": {}, "activity": {}}
         flags.append("satellite_skipped")
     else:
-        say("4/5 Reading satellite history (Dynamic World + VIIRS)")
-        sat = satellite_metrics(cells, bbox, say)
-        for m in ("growth", "activity"):
-            missing = sum(1 for c in cells if sat[m].get(c) is None)
-            if missing > 0.2 * len(cells):
-                flags.append(f"{m}_data_missing")
+        say("satellite", "Reading satellite history (Dynamic World + VIIRS)", None)
+        try:
+            sat = satellite_metrics(cells, bbox, lambda m: say("satellite", m, None))
+        except EarthEngineError as e:  # degrade gracefully: rank on OSM signals only
+            say("satellite", f"Satellite data unavailable ({e}); continuing without it", {"state": "skipped"})
+            sat = {"growth": {}, "activity": {}}
+            flags.append("satellite_unavailable")
+        else:
+            for m in ("growth", "activity"):
+                missing = sum(1 for c in cells if sat[m].get(c) is None)
+                if missing > 0.2 * len(cells):
+                    flags.append(f"{m}_data_missing")
+
+    say("competitors", "Reading OpenStreetMap (competitors, demand, access)", None)
+    osm = osm_metrics(bbox, cells, profile, res)
+    if osm["coverage"] < 0.25:
+        flags.append("thin_osm_coverage")
 
     raw = {
         "growth": {c: sat["growth"].get(c) for c in cells},
@@ -67,28 +82,34 @@ def run_pipeline(
         "access": {c: osm["access"].get(c, 0.0) for c in cells},
     }
 
-    say("5/5 Scoring areas")
+    say("scoring", "Scoring areas", None)
     scored = score_hexes(raw, weights)
     top = top_n(scored, 10)
     rank = {h: i + 1 for i, h in enumerate(top)}
 
+    say("briefs", "Naming areas and writing summaries", None)
     hexes_out = []
     for c in cells:
         lat, lon = hex_centre(c)
-        hexes_out.append(
-            {
-                "hex": c,
-                "lat": round(lat, 5),
-                "lon": round(lon, 5),
-                "score": scored[c]["score"],
-                "rank": rank.get(c),
-                "raw": {m: raw[m][c] for m in METRICS},
-                "norm": scored[c]["norm"],
-            }
-        )
+        entry = {
+            "hex": c,
+            "lat": round(lat, 5),
+            "lon": round(lon, 5),
+            "score": scored[c]["score"],
+            "rank": rank.get(c),
+            "raw": {m: raw[m][c] for m in METRICS},
+            "norm": scored[c]["norm"],
+        }
+        if c in rank:
+            entry["name"] = reverse_area(lat, lon) or f"Area near {lat:.3f}, {lon:.3f}"
+            entry["reason"] = build_reason(scored[c]["norm"], entry["raw"])
+        hexes_out.append(entry)
 
     return {
-        "city": {"name": city.name, "display_name": city.display_name, "lat": city.lat, "lon": city.lon},
+        "city": {
+            "name": city.name, "display_name": city.display_name, "lat": city.lat, "lon": city.lon,
+            "bbox": [minx, miny, maxx, maxy], "boundary": boundary_geojson,
+        },
         "category": intent.category_key,
         "label": profile["label"],
         "intent": intent.model_dump(),

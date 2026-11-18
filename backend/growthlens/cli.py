@@ -25,7 +25,7 @@ def run(
     typer.echo(f"  Demand: {', '.join(f'{d.key}={d.value or '*'}({d.weight:g})' for d in intent.demand_drivers)}")
     typer.echo(f"  Weights: {intent.to_profile()['weights']}\n")
 
-    result = run_pipeline(city, intent, progress=typer.echo, skip_satellite=skip_satellite)
+    result = run_pipeline(city, intent, progress=lambda _step, msg, _meta=None: typer.echo(f"- {msg}"), skip_satellite=skip_satellite)
     path = save_result(result, out)
     typer.echo(f"\nWrote {path}")
     typer.echo(f"Data-quality flags: {result['data_quality']['flags'] or 'none'}")

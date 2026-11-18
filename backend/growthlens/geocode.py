@@ -1,4 +1,5 @@
 """Geocode a city name to a boundary polygon using Nominatim (1 req/s, cached)."""
+import threading
 import time
 from dataclasses import dataclass
 
@@ -11,7 +12,19 @@ from . import cache
 from .config import settings
 
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+NOMINATIM_REVERSE_URL = "https://nominatim.openstreetmap.org/reverse"
 _last_call = 0.0
+_lock = threading.Lock()
+
+
+def _throttle() -> None:
+    """Nominatim policy: max 1 request/second, shared across threads."""
+    global _last_call
+    with _lock:
+        wait = 1.1 - (time.time() - _last_call)
+        if wait > 0:
+            time.sleep(wait)
+        _last_call = time.time()
 
 
 class GeocodeError(RuntimeError):
@@ -29,11 +42,7 @@ class City:
 
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=2, max=20), reraise=True)
 def _query(name: str) -> list[dict]:
-    global _last_call
-    wait = 1.1 - (time.time() - _last_call)  # Nominatim policy: max 1 req/s
-    if wait > 0:
-        time.sleep(wait)
-    _last_call = time.time()
+    _throttle()
     r = httpx.get(
         NOMINATIM_URL,
         params={"q": name, "format": "jsonv2", "polygon_geojson": 1, "limit": 5},
@@ -66,3 +75,29 @@ def geocode_city(name: str) -> City:
                 boundary=shape(geom),
             )
     raise GeocodeError(f"No city boundary found for '{name}'")
+
+
+_AREA_KEYS = ("neighbourhood", "suburb", "quarter", "city_district", "residential", "village", "town", "city")
+
+
+def reverse_area(lat: float, lon: float) -> str | None:
+    """Human-readable area name for a point (suburb/neighbourhood level). Never raises."""
+    key = f"reverse:{lat:.4f},{lon:.4f}"
+    cached = cache.get(key)
+    if cached is not None:
+        return cached or None
+    try:
+        _throttle()
+        r = httpx.get(
+            NOMINATIM_REVERSE_URL,
+            params={"lat": lat, "lon": lon, "format": "jsonv2", "zoom": 14, "addressdetails": 1},
+            headers={"User-Agent": settings.http_user_agent},
+            timeout=20,
+        )
+        r.raise_for_status()
+        addr = r.json().get("address", {})
+    except (httpx.HTTPError, ValueError):
+        return None  # don't cache failures
+    name = next((addr[k] for k in _AREA_KEYS if addr.get(k)), "")
+    cache.put(key, name)
+    return name or None

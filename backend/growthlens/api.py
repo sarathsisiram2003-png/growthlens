@@ -1,17 +1,24 @@
-"""FastAPI wrapper. Phase 2: free-text intent. Phase 5 moves analysis to background jobs."""
-import hashlib
+"""FastAPI app. Jobs run in the background; the frontend polls for progress."""
 import json
+import os
 
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 
-from .config import settings
-from .geocode import GeocodeError
 from .intent import parse_intent
-from .osm import OverpassError
-from .pipeline import run_pipeline, save_result, slug
-from .satellite import EarthEngineError
+from .jobs import get_job, start_job
 
-app = FastAPI(title="GrowthLens API", version="0.2.0")
+app = FastAPI(title="GrowthLens API", version="0.3.0")
+
+# Frontend origins; override in production with CORS_ORIGINS="https://app.example.com,..."
+_origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
+app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in _origins], allow_methods=["GET", "POST"], allow_headers=["*"])
+
+
+class JobRequest(BaseModel):
+    city: str = Field(min_length=2, max_length=200)
+    query: str = Field(min_length=2, max_length=300)
 
 
 @app.get("/health")
@@ -19,35 +26,34 @@ def health() -> dict:
     return {"status": "ok"}
 
 
-def _parse(query: str):
-    try:
-        return parse_intent(query)
-    except ValueError as e:
-        raise HTTPException(400, str(e)) from e
-
-
 @app.get("/intent")
 def intent(query: str = Query(..., max_length=300)) -> dict:
-    """Preview what the AI understood (shown on the Analysing screen, editable by the user)."""
-    parsed, warning = _parse(query)
+    """Preview what the AI understood (shown on the Analysing screen)."""
+    try:
+        parsed, warning = parse_intent(query)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from e
     return {"intent": parsed.model_dump(), "warning": warning}
 
 
-@app.get("/analyze")
-def analyze(city: str = Query("Bengaluru"), query: str = Query("cafe", max_length=300), refresh: bool = False) -> dict:
-    parsed, warning = _parse(query)
-    # Cache per (city, intent): hash the full intent so edited tags/weights don't collide.
-    h = hashlib.sha1(json.dumps(parsed.model_dump(), sort_keys=True).encode()).hexdigest()[:10]
-    path = settings.output_dir / f"{slug(city)}_{parsed.category_key}_{h}.json"
-    if path.exists() and not refresh:
-        return json.loads(path.read_text(encoding="utf-8"))
-    try:
-        result = run_pipeline(city, parsed)
-    except GeocodeError as e:
-        raise HTTPException(404, str(e)) from e
-    except (OverpassError, EarthEngineError) as e:
-        raise HTTPException(502, str(e)) from e
-    if warning:
-        result["data_quality"]["flags"].append("intent_fallback_preset")
-    save_result(result, path)
-    return result
+@app.post("/jobs", status_code=202)
+def create_job(req: JobRequest) -> dict:
+    return start_job(req.city, req.query).public()
+
+
+@app.get("/jobs/{job_id}")
+def job_status(job_id: str) -> dict:
+    job = get_job(job_id)
+    if job is None:
+        raise HTTPException(404, "Unknown job (the server may have restarted). Please search again.")
+    return job.public()
+
+
+@app.get("/jobs/{job_id}/result")
+def job_result(job_id: str) -> dict:
+    job = get_job(job_id)
+    if job is None:
+        raise HTTPException(404, "Unknown job. Please search again.")
+    if job.status != "done" or job.result_path is None:
+        raise HTTPException(409, f"Job is {job.status}")
+    return json.loads(job.result_path.read_text(encoding="utf-8"))
