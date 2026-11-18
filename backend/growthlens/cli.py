@@ -1,8 +1,9 @@
-"""CLI: python -m growthlens.cli run --city Bengaluru --category cafe"""
+"""CLI: python -m growthlens.cli run --city Bengaluru --query "specialty café for college students" """
 from pathlib import Path
 
 import typer
 
+from .intent import parse_intent
 from .pipeline import run_pipeline, save_result
 
 app = typer.Typer(add_completion=False, help="GrowthLens pipeline")
@@ -11,11 +12,20 @@ app = typer.Typer(add_completion=False, help="GrowthLens pipeline")
 @app.command()
 def run(
     city: str = typer.Option("Bengaluru", help="City name"),
-    category: str = typer.Option("cafe", help="Business category profile"),
+    query: str = typer.Option("cafe", help="What you want to open, in plain words"),
     out: Path | None = typer.Option(None, help="Output JSON path"),
     skip_satellite: bool = typer.Option(False, help="Skip Earth Engine (OSM-only dry run)"),
+    no_llm: bool = typer.Option(False, help="Do not call the LLM; use keyword-matched presets"),
 ) -> None:
-    result = run_pipeline(city, category, progress=typer.echo, skip_satellite=skip_satellite)
+    intent, warning = parse_intent(query, use_llm=not no_llm)
+    if warning:
+        typer.secho(f"! {warning}", fg=typer.colors.YELLOW)
+    typer.echo(f"Understood: {intent.label} [{intent.source}] - {intent.summary}")
+    typer.echo(f"  Competitors: {', '.join(f'{t.key}={t.value or '*'}' for t in intent.competitors)}")
+    typer.echo(f"  Demand: {', '.join(f'{d.key}={d.value or '*'}({d.weight:g})' for d in intent.demand_drivers)}")
+    typer.echo(f"  Weights: {intent.to_profile()['weights']}\n")
+
+    result = run_pipeline(city, intent, progress=typer.echo, skip_satellite=skip_satellite)
     path = save_result(result, out)
     typer.echo(f"\nWrote {path}")
     typer.echo(f"Data-quality flags: {result['data_quality']['flags'] or 'none'}")

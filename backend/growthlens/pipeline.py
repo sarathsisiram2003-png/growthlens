@@ -5,10 +5,10 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .categories import get_profile
 from .config import settings
 from .geocode import geocode_city
 from .grid import city_hexes, hex_centre
+from .intent import Intent
 from .osm import osm_metrics
 from .satellite import satellite_metrics
 from .scoring import METRICS, score_hexes, top_n
@@ -21,11 +21,11 @@ def slug(text: str) -> str:
 
 
 def run_pipeline(
-    city_name: str, category: str, weights: dict[str, float] | None = None, progress: Progress | None = None,
+    city_name: str, intent: Intent, weights: dict[str, float] | None = None, progress: Progress | None = None,
     skip_satellite: bool = False,
 ) -> dict:
     say = progress or (lambda _m: None)
-    profile = get_profile(category)
+    profile = intent.to_profile()
     weights = weights or profile["weights"]
     res = settings.h3_resolution
 
@@ -89,8 +89,9 @@ def run_pipeline(
 
     return {
         "city": {"name": city.name, "display_name": city.display_name, "lat": city.lat, "lon": city.lon},
-        "category": category,
+        "category": intent.category_key,
         "label": profile["label"],
+        "intent": intent.model_dump(),
         "h3_resolution": res,
         "weights": weights,
         "windows": {

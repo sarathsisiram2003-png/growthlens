@@ -11,5 +11,6 @@ uvicorn==0.54.0
 pydantic-settings==2.16.3
 python-dotenv==1.2.4
 typer==0.29.1
+google-genai==3.4.0
 pytest==9.2.0
 pytest-mock==3.17.0

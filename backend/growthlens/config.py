@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     ee_service_account_email: str = ""
     http_user_agent: str = "GrowthLens/0.1 (portfolio project)"
 
+    # LLM intent parsing (Google Gemini). Empty key -> offline preset fallback.
+    gemini_api_key: str = ""
+    llm_model: str = "gemini-3.5-flash-lite"
+
     h3_resolution: int = 8
     # Growth window (Dynamic World built-up probability, annual means)
     growth_start_year: int = 2021
