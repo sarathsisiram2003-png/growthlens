@@ -17,6 +17,7 @@ SEVERITY = {
     "satellite_unavailable": "caution",
     "satellite_skipped": "caution",
     "growth_data_missing": "caution",
+    "weak_growth_signal": "caution",
     "activity_data_missing": "caution",
     "intent_fallback_preset": "caution",
     # the ranking is a rough guide at best
@@ -55,6 +56,7 @@ def assess(
     tiles_failed: int = 0,
     tiles_total: int = 1,
     approximate_boundary: bool = False,
+    mean_growth: float | None = None,
     extra_flags: list[str] | None = None,
 ) -> dict:
     flags: list[str] = list(extra_flags or [])
@@ -71,6 +73,10 @@ def assess(
 
     if tiles_failed > 0:
         flags.append("osm_partial")
+    # Built-up area does not shrink across a whole city. If the average change is negative the growth signal is mostly
+    # measurement noise (the backtest's worst case, London, looked like this), so say so.
+    if mean_growth is not None and mean_growth < 0:
+        flags.append("weak_growth_signal")
     if approximate_boundary:
         flags.append("approximate_boundary")
     if n_areas < FEW_AREAS:

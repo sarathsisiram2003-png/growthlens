@@ -5,6 +5,7 @@
 Earth Engine is used under non-commercial terms for this portfolio project.
 """
 import hashlib
+import json
 import threading
 from collections.abc import Callable
 
@@ -18,6 +19,7 @@ from .grid import hex_polygon
 BATCH = 400  # features per reduceRegions call (stays well under EE limits)
 DW = "GOOGLE/DYNAMICWORLD/V1"
 VIIRS = "NOAA/VIIRS/DNB/MONTHLY_V1/VCMCFG"
+EE_REQUEST_DEADLINE_MS = 240_000  # 4 minutes: longer than any normal batch, shorter than "forever"
 
 
 class EarthEngineError(RuntimeError):
@@ -38,7 +40,11 @@ def init_ee() -> None:
         if not s.ee_project:
             raise EarthEngineError("EE_PROJECT is not set in backend/.env")
         try:
-            if s.ee_service_account_key and s.ee_service_account_email:
+            if s.ee_service_account_json:  # key JSON passed via environment (never written to disk)
+                email = json.loads(s.ee_service_account_json)["client_email"]
+                creds = ee.ServiceAccountCredentials(email, key_data=s.ee_service_account_json)
+                ee.Initialize(creds, project=s.ee_project)
+            elif s.ee_service_account_key and s.ee_service_account_email:
                 creds = ee.ServiceAccountCredentials(s.ee_service_account_email, s.ee_service_account_key)
                 ee.Initialize(creds, project=s.ee_project)
             else:
@@ -47,6 +53,7 @@ def init_ee() -> None:
             raise EarthEngineError(
                 f"Earth Engine init failed ({e}). Run `earthengine authenticate` or set service-account vars."
             ) from e
+        ee.data.setDeadline(EE_REQUEST_DEADLINE_MS)  # a stalled request becomes an error (then a retry), not a hang
         _initialised = True
 
 
@@ -127,3 +134,53 @@ def satellite_metrics(cells: list[str], bbox, progress: Callable[[str], None] | 
         lambda r: viirs_trend_image(s.viirs_start, s.viirs_end, r), cells, 500, "activity", bbox, tag_a, progress
     )
     return {"growth": growth, "activity": activity}
+
+
+# ---------------------------------------------------------------- yearly series (backtest)
+
+def _yearly_image(kind: str, years: list[int], region: ee.Geometry) -> ee.Image:
+    """One multi-band image, a band per year: Dynamic World built-up probability or VIIRS radiance (annual mean)."""
+    bands = []
+    for y in years:
+        col = ee.ImageCollection(DW if kind == "built" else VIIRS).filterBounds(region).filterDate(f"{y}-01-01", f"{y + 1}-01-01")
+        img = col.select("built" if kind == "built" else "avg_rad").mean()
+        bands.append(img.rename(f"y{y}"))
+    return ee.Image.cat(bands)
+
+
+def yearly_stats(
+    kind: str, cells: list[str], bbox, years: list[int], progress: Callable[[str], None] | None = None
+) -> dict[str, list[float | None]]:
+    """Per-hex annual mean of 'built' (Dynamic World, 10 m) or 'viirs' (night-light radiance, ~500 m).
+
+    Returns {hex: [value per year]} (None where Earth Engine has no data). Cached per batch, so reruns are free.
+    bbox = (south, west, north, east).
+    """
+    if kind not in ("built", "viirs"):
+        raise ValueError("kind must be 'built' or 'viirs'")
+    init_ee()
+    scale = 10 if kind == "built" else 500
+    region = ee.Geometry.Rectangle([bbox[1], bbox[0], bbox[3], bbox[2]])
+    image = _yearly_image(kind, years, region)
+    out: dict[str, list[float | None]] = {}
+    for i in range(0, len(cells), 300):
+        chunk = cells[i : i + 300]
+        key = f"ee-yearly:{kind}:{years[0]}-{years[-1]}:" + hashlib.sha1(",".join(chunk).encode()).hexdigest()
+        part = cache.get(key)
+        if part is None:
+            try:
+                res = _reduce_multi(image, chunk, scale)
+                part = {h: [None if props.get(f"y{y}") is None else round(props[f"y{y}"], 4) for y in years] for h, props in res.items()}
+            except Exception as e:  # noqa: BLE001 - a failed batch becomes "missing", reported by the caller
+                raise EarthEngineError(f"Earth Engine failed on {kind} batch {i // 300 + 1}: {e}") from e
+            cache.put(key, part)
+        out.update(part)
+        if progress:
+            progress(f"  {kind}: {min(i + 300, len(cells))}/{len(cells)} areas")
+    return out
+
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=3, max=30), reraise=True)
+def _reduce_multi(image: ee.Image, cells: list[str], scale: int) -> dict[str, dict]:
+    res = image.reduceRegions(collection=_hex_collection(cells), reducer=ee.Reducer.mean(), scale=scale, tileScale=4).getInfo()
+    return {f["properties"]["hex"]: f["properties"] for f in res["features"]}

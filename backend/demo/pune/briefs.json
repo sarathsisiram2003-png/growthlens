@@ -1,0 +1,62 @@
+{
+ "8860885547fffff": {
+  "why_here": "Bavdhan ranks first in Pune for this business with a score of 83 out of 100, indicating a strong relative position compared to other city areas. It benefits from high activity and demand percentiles of 99 and 92 respectively, alongside 4 weighted demand drivers in the area including universities and educational institutions.",
+  "risks": "There are zero competitors recorded directly in the area, which may represent a genuine gap or thin OpenStreetMap coverage given the low OSM coverage share of 0.344 and the approximate boundary flag. Furthermore, scores and percentiles only rank areas within the city and do not predict actual business success.",
+  "suggested_format": "Validate demand with a compact format or kiosk given the local data limitations, while noting the 7 nearby competitors within 1,200 meters.",
+  "source": "llm"
+ },
+ "88608842d3fffff": {
+  "why_here": "Lavale ranks second in Pune with a score of 83 out of 100, driven by very high growth at the 98th percentile and high activity and demand both at the 95th percentile. The area features 6.0 weighted demand drivers including multiple universities and colleges, while competition is moderate at the 57th percentile.",
+  "risks": "There are zero competitors directly in the area, but OpenStreetMap coverage is low at 34.4 percent, which means a competitor count of zero may indicate a genuine gap or simply thin coverage. Data quality is further limited by an approximate boundary.",
+  "suggested_format": "A small to medium specialty cafe format is a sensible starting point to validate demand among the nearby university and college population.",
+  "source": "llm"
+ },
+ "8860884003fffff": {
+  "why_here": "Tathawade ranks third in Pune for a specialty café with a score of 81 out of 100, driven by city-leading activity and high growth signals. The area features weighted demand drivers including colleges, educational institutions, an IT facility, and a coworking space.",
+  "risks": "There are zero competitors recorded directly in the area, but this may indicate a genuine gap or thin OpenStreetMap coverage, given the low coverage share of 0.344 and approximate boundary flag. Additionally, transit stops count is zero in the area, and scores only rank areas relative to the city rather than predicting success.",
+  "suggested_format": "A standard café format should be considered to validate demand from nearby college and institutional drivers.",
+  "source": "llm"
+ },
+ "8860885a17fffff": {
+  "why_here": "Pimpri-Chinchwad ranks 4th in Pune with an overall score of 81 out of 100, which reflects its relative standing compared to other city areas rather than a prediction of success. The area shows strong performance in demand at the 95th percentile and growth at the 93rd percentile, supported by weighted demand drivers that include a college and a university.",
+  "risks": "There are zero competitors recorded in the area, which may indicate a genuine market gap or thin OpenStreetMap coverage given the low coverage share of 0.344. Additionally, data quality flags note an approximate boundary, transit stops in the area count as zero, and access scores sit lower at the 40th percentile.",
+  "suggested_format": "Consider a compact specialty cafe format to test demand near the educational institutions while validating local foot traffic patterns.",
+  "source": "llm"
+ },
+ "8860885031fffff": {
+  "why_here": "Mangalwar Peth ranks fifth in Pune for this business with a score of 79 out of 100, which ranks areas within the city rather than predicting success. It benefits from high demand with a demand signal at the 96th percentile and eight weighted demand drivers locally, alongside strong activity and access signals at the 80th and 83rd percentiles respectively.",
+  "risks": "There are zero competitors recorded directly in the area, but given the low OpenStreetMap coverage share of 0.344 and the approximate boundary flag, this may indicate either a genuine gap or thin data coverage. Furthermore, there are seven competitors within 1200 meters, which increases nearby rivalry.",
+  "suggested_format": "Given the local demand drivers such as colleges and government offices, a small specialty cafe format should be tested to validate local footfall and customer conversion.",
+  "source": "llm"
+ },
+ "88608840c9fffff": {
+  "why_here": "Hinjawadi ranks 6th in Pune with a score of 77 out of 100, driven by very high activity and demand percentiles of 97 and 89 respectively. The area features 4 transit stops and multiple demand drivers including 8 IT companies and 4 educational institutions. Scores and percentiles are relative to this city and rank areas; they do not predict success.",
+  "risks": "There are zero competitors recorded directly in the area, which may mean a genuine market gap or thin OpenStreetMap coverage, especially given the low OSM coverage share of 0.34 percent. Furthermore, the data quality flags indicate the use of an approximate boundary, introducing uncertainty into these metrics.",
+  "suggested_format": "Consider a compact format that can be validated against footfall patterns near the local transit stops and IT demand drivers.",
+  "source": "llm"
+ },
+ "886088401bfffff": {
+  "why_here": "Hinjawadi ranks 7th in Pune with a score of 77 out of 100, driven by high activity and good access. The area features strong demand drivers including 10 companies, 5 IT facilities, and 5 educational institutions. Note that scores and percentiles rank this area relative to others in the city and do not predict business success.",
+  "risks": "There are 0 competitors recorded directly in the area, which may indicate a genuine gap or thin OpenStreetMap coverage given the low coverage share of 0.344 and the approximate boundary flag. Furthermore, there are 5 competitors within 1200 meters, so surrounding competition still exists.",
+  "suggested_format": "A standard specialty cafe format should be tested to validate local demand against the 5 nearby competitors.",
+  "source": "llm"
+ },
+ "886088550bfffff": {
+  "why_here": "Bavdhan ranks 8th in Pune for a specialty café with a score of 77 out of 100, driven by high growth and strong demand signals within the city. The area features multiple educational institutions, universities, and a library within 1200 meters, contributing to local activity. These scores and percentiles rank areas relative to the city and do not predict success.",
+  "risks": "Data quality flags indicate an approximate boundary, and OpenStreetMap coverage share is low at 34.4 percent, which creates uncertainty. The zero competitor count in the area and within 1200 meters may represent a genuine gap or thin coverage. Additionally, transit stops count is null and access percentile is relatively low at 40.",
+  "suggested_format": "A small independent café format should be tested to validate local footfall and customer behavior given the uncertain competitor and coverage data.",
+  "source": "llm"
+ },
+ "8860884019fffff": {
+  "why_here": "Bhujbal Chowk ranks 9 out of 100 in Pune for a specialty café, scoring 77 out of 100 based on city rankings that indicate relative standing rather than direct success prediction. It benefits from high activity and access percentiles of 96 and 83 respectively, alongside 1 transit stop, 7 educational institutions, and 4 companies in the wider area.",
+  "risks": "There are 0 competitors recorded directly in the area, but OpenStreetMap coverage is low at 34 percent and the boundary is approximate, meaning zero competitors could reflect a genuine market gap or thin data. Within 1200 meters, 11 competitors already exist.",
+  "suggested_format": "A small storefront or kiosk format is a sensible option to test local demand before scaling.",
+  "source": "llm"
+ },
+ "8860885193fffff": {
+  "why_here": "Aundh ranks 10 out of all areas in Pune with a score of 76 out of 100, reflecting relative area rankings within the city rather than predicting direct success. The area shows maximum relative demand with a demand signal of 100, supported by 22 weighted demand drivers in the area including 21 universities and 5 libraries.",
+  "risks": "Data quality flags indicate approximate boundary usage, and OpenStreetMap coverage share is low at 0.344, meaning a competitor count of 0 in the immediate area may reflect a genuine gap or thin coverage. Within 1200 meters, there are 3 competitors named Chaha Mi, the chefs way cafe, and BUENOS KAFFE.",
+  "suggested_format": "Given the proximity to universities and research facilities, a compact specialty café format should be tested to validate student and academic footfall.",
+  "source": "llm"
+ }
+}

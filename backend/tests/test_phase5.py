@@ -589,3 +589,54 @@ def test_geocoder_does_not_retry_when_a_city_is_already_found(monkeypatch):
     monkeypatch.setattr(geocode_mod.cache, "put", lambda k, v: None)
     geocode_mod.geocode_city("Pune")
     assert calls == [None]
+
+
+# ======================================================================= names are requested in English
+
+def test_nominatim_calls_ask_for_english_names(monkeypatch):
+    seen = []
+
+    class R:
+        def raise_for_status(self): ...
+        def json(self): return {"address": {"suburb": "Downtown Dubai"}}
+
+    monkeypatch.setattr(geocode_mod.httpx, "get", lambda url, params=None, **k: seen.append(params) or R())
+    monkeypatch.setattr(geocode_mod, "_throttle", lambda: None)
+    store = {}
+    monkeypatch.setattr(geocode_mod.cache, "get", lambda k, max_age_s=None: store.get(k))
+    monkeypatch.setattr(geocode_mod.cache, "put", lambda k, v: store.__setitem__(k, v))
+    assert geocode_mod.reverse_area(25.2, 55.27) == "Downtown Dubai"
+    geocode_mod._query("Dubai")
+    assert all(p["accept-language"] == "en" for p in seen) and len(seen) == 2
+    assert any(k.startswith("reverse:en:") for k in store)  # separate cache namespace from older local-script names
+
+
+# ======================================================================= weak growth signal flag
+
+def test_negative_citywide_growth_is_flagged_as_unreliable():
+    r = dq(mean_growth=-0.025)
+    assert "weak_growth_signal" in r["flags"] and r["level"] == "caution"
+    assert r["severities"]["weak_growth_signal"] == "caution"
+
+
+@pytest.mark.parametrize("mean", [0.0, 0.003, 0.04, None])
+def test_zero_positive_or_unknown_growth_is_not_flagged(mean):
+    assert "weak_growth_signal" not in dq(mean_growth=mean)["flags"]
+
+
+def test_pipeline_passes_the_citywide_mean_growth(mocked_pipeline):
+    mocked_pipeline.setattr(
+        pipeline_mod, "satellite_metrics",
+        lambda cells, bbox, progress=None: {"growth": {c: -0.02 for c in cells}, "activity": {c: 1.0 for c in cells}},
+    )
+    r = pipeline_mod.run_pipeline("Smalltown", intent_from_preset("cafe"))
+    assert "weak_growth_signal" in r["data_quality"]["flags"]
+
+
+def test_pipeline_ignores_missing_growth_values_in_the_mean(mocked_pipeline):
+    mocked_pipeline.setattr(
+        pipeline_mod, "satellite_metrics",
+        lambda cells, bbox, progress=None: {"growth": {c: (None if i % 2 else 0.03) for i, c in enumerate(cells)}, "activity": {}},
+    )
+    r = pipeline_mod.run_pipeline("Smalltown", intent_from_preset("cafe"))
+    assert "weak_growth_signal" not in r["data_quality"]["flags"]

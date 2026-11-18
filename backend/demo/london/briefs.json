@@ -1,0 +1,62 @@
+{
+ "88195dac05fffff": {
+  "why_here": "Ickenham ranks first in London for this specialty café profile with an overall score of 81 out of 100, driven by top-tier growth and activity signals both at the 96th percentile. The area features 10 transit stops and 3 weighted demand drivers within the zone, supported by a local competition signal at the 75th percentile indicating fewer competitors.",
+  "risks": "There are zero competitors directly in the area which may indicate either a genuine market gap or thin OpenStreetMap coverage. Within a 1200m radius, however, there are 8 competitors including chains like Costa and GAIL's, so wider market pressure exists.",
+  "suggested_format": "A standard specialty café format should be tested to validate local demand against nearby chain competition.",
+  "source": "llm"
+ },
+ "88195d3629fffff": {
+  "why_here": "Harmondsworth ranks second in the city with a score of 80 out of 100, driven by a growth signal percentile of 99 and activity at 97. Note that scores and percentiles are relative to this city and rank areas, they do not predict success. The area includes 7 transit stops and 3 demand drivers in the immediate area, supported by nearby major employers such as Heathrow Airport Limited and DHL.",
+  "risks": "There are 0 competitors in the area, which may mean a genuine gap or thin OpenStreetMap coverage. Within 1200 meters, there is 1 competitor named Starbucks. The competition signal percentile is 75, indicating fewer competitors relative to the rest of the city.",
+  "suggested_format": "A compact specialty café format should be considered to validate demand in this location.",
+  "source": "llm"
+ },
+ "88194e6819fffff": {
+  "why_here": "Gants Hill ranks third out of all city areas for a specialty café with a score of 80 out of 100, which ranks areas relative to this city rather than predicting success. It benefits from very high demand and access percentiles of 94 and 96 respectively, alongside 16 weighted demand drivers and 22 transit stops in the area.",
+  "risks": "There are zero competitors recorded directly in the area, which may mean a genuine gap or thin OpenStreetMap coverage given the 0.888 coverage share. Additionally, the night light trend shows a decrease of 0.78.",
+  "suggested_format": "A standard specialty café format should be considered to test local footfall, keeping in mind that 10 competitors exist within 1,200 metres.",
+  "source": "llm"
+ },
+ "88194ad305fffff": {
+  "why_here": "Bank ranks fourth in London for a specialty café with a score of 80 out of 100, reflecting relative area rankings rather than a guarantee of success. The location shows top-tier signals for growth, activity, demand, and transport access compared to other parts of the city. Demand is supported by 106 weighted drivers in the area, including high counts of nearby companies and legal offices.",
+  "risks": "Competition is intense, with 52 direct competitors in the immediate area and 340 within a 1,200-meter radius, featuring chains like Costa and Black Sheep Coffee. The open data coverage share stands at 88.8 percent, which means mapping may be incomplete.",
+  "suggested_format": "A compact counter-service format focused on speed during peak hours is a sensible option to test local demand.",
+  "source": "llm"
+ },
+ "88195d366dfffff": {
+  "why_here": "West Drayton ranks fifth in London for a specialty café with a score of 79 out of 100, driven by very high growth at the 98th percentile and strong demand at the 84th percentile. Scores and percentiles are relative to this city and rank areas; they do not predict success.",
+  "risks": "There are zero competitors recorded directly in the area, which may mean a genuine gap or thin OpenStreetMap coverage given the coverage share of 0.888. Additionally, four competitors are located within 1200 meters and the night light trend is negative.",
+  "suggested_format": "Consider a compact format or kiosk to test local demand before committing to a larger space.",
+  "source": "llm"
+ },
+ "88194ac333fffff": {
+  "why_here": "Little Woodcote ranks 6th in London for a specialty café with a score of 78 out of 100. It benefits from strong city percentiles in growth at 94, access at 89, and competition at 75, indicating fewer competitors relative to the city. There are 17 transit stops in the area and 3 weighted demand drivers.",
+  "risks": "There are 0 competitors recorded directly in the area, which may mean a genuine gap or thin OpenStreetMap coverage given the 0.888 coverage share. Night light trend is negative at -0.33, and rankings merely rank areas within the city and do not predict success.",
+  "suggested_format": "A small-to-medium specialty café format should be tested to validate local demand against the 3 nearby competitors located within 1200 meters.",
+  "source": "llm"
+ },
+ "88195dad4dfffff": {
+  "why_here": "West Harefield ranks 7th out of 100 in London for a specialty cafe, driven by high demand and strong growth signals. The area has 16 demand drivers and 0 direct competitors locally, though scores and percentiles only rank this area relative to the rest of the city and do not predict commercial success.",
+  "risks": "There are 0 competitors recorded directly in the area, but this may mean a genuine gap or thin OpenStreetMap coverage. Furthermore, transit access scores very low at the 7th percentile with 0 transit stops in the area, and night light trends are negative.",
+  "suggested_format": "Consider a compact format to test local footfall, keeping in mind the limited local transit access and surrounding data.",
+  "source": "llm"
+ },
+ "88195dad53fffff": {
+  "why_here": "London Borough of Hillingdon ranks 8th in the city for a specialty café with a score of 77 out of 100. The area shows very high growth and activity signals at the 99th percentile, alongside a demand signal of 71. These rankings are relative to this city and rank areas rather than predicting success.",
+  "risks": "There are zero competitors recorded in the area and within 1200 meters, which may indicate a genuine gap or thin OpenStreetMap coverage since the coverage share is 0.888. Additionally, the access signal is low at the 15th percentile with only 1 transit stop in the area.",
+  "suggested_format": "Consider a compact format to validate demand, given the low transit stop count and uncertainty around competitor presence.",
+  "source": "llm"
+ },
+ "88195da64bfffff": {
+  "why_here": "Southgate ranks 9 out of all areas in London for a specialty cafe with a score of 77 out of 100, driven by growth in the 95th percentile and activity in the 81st percentile. It features 8 transit stops and zero direct competitors in the immediate area, though there are 8 competitors within 1200 meters.",
+  "risks": "While zero competitors are logged directly in the area, this may indicate a genuine market gap or thin OpenStreetMap coverage. Additionally, the area shows a negative night light trend of -0.1.",
+  "suggested_format": "Consider a compact format or kiosk model to test local footfall and validate demand before committing to a larger footprint.",
+  "source": "llm"
+ },
+ "88195db4d1fffff": {
+  "why_here": "Ponders End ranks 10th in London for a specialty cafe with a score of 77 out of 100, which ranks areas relative to this city and does not predict success. The area benefits from a high growth signal at the 86th percentile and a strong demand signal at the 79th percentile, alongside 5 weighted demand drivers and 10 transit stops in the area.",
+  "risks": "There are zero competitors recorded directly in the area, but a competitor count of zero may mean a genuine gap or thin OpenStreetMap coverage. Additionally, there are 10 competitors within 1200 metres including Costa, Mola, Anteplioglu Pastanesi, and Mureli, and the night light trend is negative at minus 0.21.",
+  "suggested_format": "Consider a standard specialty cafe footprint to test local demand against the 10 nearby competitors within 1200 metres.",
+  "source": "llm"
+ }
+}

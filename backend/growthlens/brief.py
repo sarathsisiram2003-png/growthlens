@@ -9,7 +9,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from . import cache
+from . import cache, demo
 from .config import settings
 from .llm import generate_json
 from .reasons import build_reason
@@ -127,6 +127,9 @@ def _template(result: dict, row: dict) -> BriefCore:
 
 
 def build_brief(result: dict, row: dict) -> Brief:
+    pre = demo.get_brief(result["id"], row["hex"])
+    if pre is not None:  # demo cities ship their briefs, so they never depend on the LLM being reachable
+        return Brief.model_validate(pre)
     key = f"brief:{result['id']}:{row['hex']}:{settings.llm_model}"
     cached = cache.get(key)
     if cached is not None:

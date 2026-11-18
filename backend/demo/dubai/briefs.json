@@ -1,0 +1,62 @@
+{
+ "8843acca21fffff": {
+  "why_here": "Al Garhoud ranks first in Dubai for a specialty cafe, scoring 87 out of 100 based on city-wide relative rankings that do not predict actual success. The area shows very high demand and activity percentiles of 100 and 94 respectively, supported by 24 weighted demand drivers inside the area and 12 competitors within 1200 meters.",
+  "risks": "There are zero competitors recorded directly in the area, but this may indicate a genuine gap or thin OpenStreetMap coverage, given the low coverage share of 0.32 and the approximate boundary data quality flag. Furthermore, 12 competitors operate within 1200 meters, which introduces surrounding rivalry.",
+  "suggested_format": "A sensible format to validate would be a small footprint shop that can capture the local pedestrian and transit flow from the 4 transit stops in the area.",
+  "source": "llm"
+ },
+ "8843a1355bfffff": {
+  "why_here": "القوز الصناعية 2 ranks second in Dubai for a specialty cafe with a score of 86 out of 100, which ranks areas rather than predicting success. It benefits from very high demand at the 97th percentile and strong activity at the 89th percentile, supported by local demand drivers including 24 companies. Note that scores and percentiles are relative to this city.",
+  "risks": "There are zero competitors recorded in the area and within 1200 meters, which may indicate a genuine gap or thin OpenStreetMap coverage given the low coverage share of 0.32. Additionally, the boundary is approximate, which introduces spatial uncertainty.",
+  "suggested_format": "Consider a compact format or kiosk to test local demand among the surrounding businesses while validating the actual footfall.",
+  "source": "llm"
+ },
+ "8843acca0dfffff": {
+  "why_here": "Al Muraqqabat ranks 3rd in Dubai for a specialty cafe with a score of 85 out of 100, which reflects a city-relative ranking rather than a guarantee of success. The area shows very high demand and activity signals both at the 98th percentile, supported by 14 weighted demand drivers in the area and 41 within 1200 meters, including malls like Warba Shopping Centre and Hamarain Center. Transit access is also strong at the 98th percentile with 7 transit stops in the area.",
+  "risks": "There are zero competitors recorded directly in the area, but this may mean a genuine gap or thin OpenStreetMap coverage, especially given that the osm_coverage_share is only 0.32 and data quality flags indicate an approximate boundary. Within 1200 meters, there are already 20 competitors, so surrounding market saturation must be verified.",
+  "suggested_format": "A small-footprint specialty cafe format focusing on takeaway or quick service is a sensible option to validate against local footfall patterns and the surrounding 20 competitors.",
+  "source": "llm"
+ },
+ "8843a136d7fffff": {
+  "why_here": "Al Satwa ranks 4th in Dubai for a specialty café with a score of 85 out of 100, driven by top-tier growth and strong accessibility compared to other areas. The area benefits from 3 transit stops and 2 demand drivers recorded locally, plus 18 competitors within a 1,200-meter radius including Piccolo Mondo and Starbucks.",
+  "risks": "There are 0 competitors recorded directly in the area, but this may reflect thin OpenStreetMap coverage rather than a genuine market gap, given the low coverage share of 0.32. Additionally, the boundary is approximate and data quality flags indicate potential limitations.",
+  "suggested_format": "Consider a compact format or kiosk to test local demand before committing to a larger space.",
+  "source": "llm"
+ },
+ "8843accae7fffff": {
+  "why_here": "Al Qusais ranks 5th in Dubai for a specialty café with a score of 84 out of 100, driven by city-high growth and demand percentiles of 96 and 92. The area contains 4 weighted demand drivers, including 8 government entities and 5 companies, alongside 7 competitors within 1200 meters. Scores and percentiles are relative to this city and rank areas rather than predicting success.",
+  "risks": "There are 0 competitors detected directly in the area, but this may mean a genuine gap or thin OpenStreetMap coverage since the OSM coverage share is low at 0.32 and the data quality flags indicate an approximate boundary. These data limitations mean the local competitive landscape carries uncertainty.",
+  "suggested_format": "A small to medium format shop is a sensible option to test local demand, though this should be validated against on-the-ground footfall.",
+  "source": "llm"
+ },
+ "8843acc137fffff": {
+  "why_here": "Al Manama Industrial Area ranks sixth in Dubai for specialty cafes with an overall score of 83 out of 100, which reflects relative area ranking within the city rather than a success prediction. The location shows high activity and growth signals at the 96th and 90th percentiles respectively, alongside two transit stops in the area and four demand drivers.",
+  "risks": "There are zero competitors recorded directly in the area, but this may mean a genuine gap or thin OpenStreetMap coverage, especially given the low osm coverage share of 0.32 and the data quality flag for approximate boundary. Within 1200 meters, there are 11 competitors including Cafe Castle and Al Ijaza Cafeteria.",
+  "suggested_format": "A compact café format of moderate size is a sensible option to test local demand among the surrounding corporate and educational drivers, which should be validated on site.",
+  "source": "llm"
+ },
+ "8843acd9a1fffff": {
+  "why_here": "Al Jafiliya ranks 7th in Dubai with a score of 83 out of 100, which ranks areas within the city rather than predicting success. It features strong signals for access at the 99th percentile, demand at the 92nd percentile, and activity and growth both at the 85th percentile, supported by 8 transit stops and 4 weighted demand drivers in the area.",
+  "risks": "There are 0 competitors recorded directly in the area, but this may mean a genuine gap or thin OpenStreetMap coverage, especially given that the osm coverage share is only 0.32 and the data quality flags note an approximate boundary. There are 11 competitors within 1200 meters, and a competitor count of zero in the area itself carries uncertainty.",
+  "suggested_format": "A sensible format to test is a compact specialty café setup to validate local footfall near the transit stops and government demand drivers.",
+  "source": "llm"
+ },
+ "8843acc1b9fffff": {
+  "why_here": "Halwan ranks eighth in the city with a score of 83 out of 100, driven by very high growth at the 98th percentile and strong demand at the 86th percentile. The area features multiple demand drivers including government facilities, a mall, and companies.",
+  "risks": "There are zero competitors in the immediate area and only one within 1,200 meters, but the low OpenStreetMap coverage share of 0.32 and approximate boundary flag mean this could be a genuine gap or simply thin coverage. Data limitations and null or flagged values require ground validation.",
+  "suggested_format": "A small specialty cafe format should be tested to validate local footfall against the limited mapping data.",
+  "source": "llm"
+ },
+ "8843acca19fffff": {
+  "why_here": "Al Mamzar ranks 9th in Dubai for a specialty cafe with a score of 83 out of 100, relative to this city. It features strong demand and growth signals at the 90th and 96th percentiles, alongside 3 weighted demand drivers in the immediate area including malls and government entities.",
+  "risks": "There are 0 competitors in the area, but OpenStreetMap coverage is low at 32 percent and data quality flags indicate approximate boundaries, meaning this zero count may reflect thin coverage rather than a genuine market gap. Additionally, there are 20 competitors within 1,200 meters.",
+  "suggested_format": "Consider a standard cafe format, but validate local footfall patterns and exact site boundaries before committing given the data limitations.",
+  "source": "llm"
+ },
+ "8843a13461fffff": {
+  "why_here": "Al Quoz Industrial 1 ranks 10th in Dubai with a score of 82 out of 100, driven by very high demand and activity percentiles of 98 and 95 relative to the city. The area features 12 weighted demand drivers, including 36 companies and 3 malls, alongside strong growth and access signals.",
+  "risks": "There are zero competitors recorded in the area, but the OpenStreetMap coverage share is low at 32 percent and data quality flags note approximate boundaries, meaning this zero count could indicate a genuine gap or thin coverage. These citywide percentile ranks and scores reflect relative area rankings and do not predict business success.",
+  "suggested_format": "Validate demand with a mobile or compact format to test the heavy corporate and commercial footfall from nearby offices and logistics facilities.",
+  "source": "llm"
+ }
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiError, cancelJob, createJob, getJob, getResult } from "@/lib/api";
+import { ApiError, cancelJob, createJob, getDemo, getJob, getResult } from "@/lib/api";
 import type { AnalysisResult, JobStatus } from "@/lib/types";
 
 export type Phase = "start" | "analysing" | "results" | "error";
@@ -75,6 +75,29 @@ export function useAnalysis() {
     }
   }, [abandonJob]);
 
+  /** Open a pre-computed demo city: no analysis, no live data services, so it works instantly and offline. */
+  const loadDemo = useCallback(
+    async (slug: string) => {
+      abandonJob();
+      const mine = ++runId.current;
+      setPhase("analysing");
+      setError(null);
+      setResult(null);
+      setJob(null);
+      try {
+        const data = await getDemo(slug);
+        if (runId.current !== mine) return;
+        setResult(data);
+        setPhase("results");
+      } catch (e) {
+        if (runId.current !== mine) return;
+        setError(e instanceof ApiError ? e.message : "Couldn't open that demo. Please try again.");
+        setPhase("error");
+      }
+    },
+    [abandonJob],
+  );
+
   const reset = useCallback(() => {
     abandonJob();
     runId.current += 1;
@@ -84,5 +107,5 @@ export function useAnalysis() {
     setError(null);
   }, [abandonJob]);
 
-  return { phase, job, result, error, start, reset };
+  return { phase, job, result, error, start, loadDemo, reset };
 }

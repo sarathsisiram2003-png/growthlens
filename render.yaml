@@ -1,0 +1,29 @@
+# Render blueprint for the API. The frontend deploys separately on Vercel (see docs/DEPLOY.md).
+services:
+  - type: web
+    name: growthlens-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: starter            # a persistent disk needs a paid plan; see docs/DEPLOY.md for the free-tier trade-off
+    healthCheckPath: /health
+    autoDeploy: true
+    disk:
+      name: growthlens-data
+      mountPath: /data
+      sizeGB: 2
+    envVars:
+      - key: DATA_DIR
+        value: /data
+      - key: TRUST_PROXY
+        value: "true"
+      - key: HTTP_USER_AGENT
+        value: GrowthLens/0.1 (portfolio project)
+      - key: CORS_ORIGINS
+        sync: false          # set to your Vercel URL, e.g. https://growthlens.vercel.app
+      - key: EE_PROJECT
+        sync: false
+      - key: EE_SERVICE_ACCOUNT_JSON
+        sync: false          # the whole service-account key JSON
+      - key: GEMINI_API_KEY
+        sync: false

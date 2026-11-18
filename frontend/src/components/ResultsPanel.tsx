@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { AlertTriangle, CheckCircle2, ChevronUp, FileDown, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -124,7 +125,12 @@ export default function ResultsPanel({
           </div>
         )}
         <div className="space-y-2.5">{top.map((row) => card(row))}</div>
-        <p className="px-1 pt-1 text-xs leading-relaxed text-muted-foreground">{result.disclaimer}</p>
+        <p className="px-1 pt-1 text-xs leading-relaxed text-muted-foreground">
+          {result.disclaimer}{" "}
+          <Link href="/methodology" className="text-primary underline underline-offset-2">
+            Methodology
+          </Link>
+        </p>
       </div>
     </aside>
   );

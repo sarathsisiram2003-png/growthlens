@@ -223,3 +223,76 @@ def test_area_name(monkeypatch):
     assert client.get("/area-name?lat=12.93&lon=77.62").json() == {"name": "Koramangala"}
     assert client.get("/area-name?lat=999&lon=0").status_code == 422
     assert client.get("/area-name?lat=0").status_code == 422
+
+
+
+def test_imagery_retries_with_cloudier_scenes_when_a_year_is_sparse(monkeypatch, tmp_path):
+    monkeypatch.setattr(imagery_mod.settings, "data_dir", tmp_path)
+    monkeypatch.setattr(imagery_mod, "init_ee", lambda: None)
+    monkeypatch.setattr(imagery_mod.ee.Geometry, "Rectangle", staticmethod(lambda coords: coords))
+    tried = []
+
+    def fake_fetch(region, year, max_cloud):
+        tried.append(max_cloud)
+        if max_cloud < 50:
+            raise imagery_mod._NoData()
+        return b"png-ok"
+
+    monkeypatch.setattr(imagery_mod, "_fetch", fake_fetch)
+    assert imagery_mod.thumbnail_png(HEX, 2017) == b"png-ok"
+    assert tried == [20, 50]  # stopped at the first threshold that worked
+    assert imagery_mod.thumbnail_png(HEX, 2017) == b"png-ok" and tried == [20, 50]  # second call served from disk
+
+
+def test_imagery_gives_up_cleanly_when_nothing_is_usable(monkeypatch, tmp_path):
+    monkeypatch.setattr(imagery_mod.settings, "data_dir", tmp_path)
+    monkeypatch.setattr(imagery_mod, "init_ee", lambda: None)
+    monkeypatch.setattr(imagery_mod.ee.Geometry, "Rectangle", staticmethod(lambda coords: coords))
+    monkeypatch.setattr(imagery_mod, "_fetch", lambda *a: (_ for _ in ()).throw(imagery_mod._NoData()))
+    with pytest.raises(imagery_mod.ImageryError, match="No usable satellite imagery"):
+        imagery_mod.thumbnail_png(HEX, 2017)
+    assert not list((tmp_path / "cache" / "imagery").glob("*.png"))  # failures are never cached
+
+
+def test_imagery_does_not_retry_on_real_errors(monkeypatch, tmp_path):
+    monkeypatch.setattr(imagery_mod.settings, "data_dir", tmp_path)
+    monkeypatch.setattr(imagery_mod, "init_ee", lambda: None)
+    monkeypatch.setattr(imagery_mod.ee.Geometry, "Rectangle", staticmethod(lambda coords: coords))
+    calls = []
+
+    def boom(region, year, max_cloud):
+        calls.append(max_cloud)
+        raise RuntimeError("Earth Engine exploded")
+
+    monkeypatch.setattr(imagery_mod, "_fetch", boom)
+    with pytest.raises(imagery_mod.ImageryError, match="unavailable"):
+        imagery_mod.thumbnail_png(HEX, 2017)
+    assert calls == [20]  # a genuine failure is reported immediately, not retried three times
+
+
+
+def test_no_usable_imagery_is_remembered_so_the_next_request_fails_fast(monkeypatch, tmp_path):
+    monkeypatch.setattr(imagery_mod.settings, "data_dir", tmp_path)
+    monkeypatch.setattr(imagery_mod, "init_ee", lambda: None)
+    monkeypatch.setattr(imagery_mod.ee.Geometry, "Rectangle", staticmethod(lambda coords: coords))
+    calls = []
+    monkeypatch.setattr(imagery_mod, "_fetch", lambda *a: calls.append(a) or (_ for _ in ()).throw(imagery_mod._NoData()))
+    for _ in range(2):
+        with pytest.raises(imagery_mod.ImageryError, match="No usable"):
+            imagery_mod.thumbnail_png(HEX, 2017)
+    assert len(calls) == len(imagery_mod.CLOUD_STEPS)  # the second request never touched Earth Engine
+    assert imagery_mod.no_data_marker(HEX, 2017).exists()
+    # a different year is unaffected
+    monkeypatch.setattr(imagery_mod, "_fetch", lambda *a: b"ok")
+    assert imagery_mod.thumbnail_png(HEX, 2018) == b"ok"
+
+
+def test_transient_errors_are_not_remembered(monkeypatch, tmp_path):
+    monkeypatch.setattr(imagery_mod.settings, "data_dir", tmp_path)
+    monkeypatch.setattr(imagery_mod, "init_ee", lambda: None)
+    monkeypatch.setattr(imagery_mod.ee.Geometry, "Rectangle", staticmethod(lambda coords: coords))
+    monkeypatch.setattr(imagery_mod, "_fetch", lambda *a: (_ for _ in ()).throw(RuntimeError("quota")))
+    with pytest.raises(imagery_mod.ImageryError):
+        imagery_mod.thumbnail_png(HEX, 2017)
+    assert not imagery_mod.no_data_marker(HEX, 2017).exists()  # a temporary failure must stay retryable
+

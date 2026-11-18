@@ -13,7 +13,11 @@ interface Props {
 }
 
 /** Earliest vs latest satellite image of an area with a draggable divider and the area's outline. */
-export default function BeforeAfter({ hex, before, after }: Props) {
+/** How many years later than requested we will accept for the "before" image when that year has no usable scenes. */
+export const MAX_BEFORE_FALLBACK = 2;
+
+export default function BeforeAfter({ hex, before: requestedBefore, after }: Props) {
+  const [before, setBefore] = useState(requestedBefore); // shown year; moves later if the earliest year has no usable imagery
   const [split, setSplit] = useState(50); // % of the width showing the "before" image
   const [loaded, setLoaded] = useState({ before: false, after: false });
   const [failed, setFailed] = useState(false);
@@ -61,7 +65,7 @@ export default function BeforeAfter({ hex, before, after }: Props) {
           className="absolute inset-0 size-full object-cover"
           style={{ clipPath: `inset(0 ${100 - split}% 0 0)` }}
           onLoad={() => setLoaded((l) => ({ ...l, before: true }))}
-          onError={() => setFailed(true)}
+          onError={() => (before < requestedBefore + MAX_BEFORE_FALLBACK ? setBefore((y) => y + 1) : setFailed(true))}
         />
         {/* eslint-enable @next/next/no-img-element */}
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 size-full" aria-hidden>
@@ -86,7 +90,7 @@ export default function BeforeAfter({ hex, before, after }: Props) {
         />
       </div>
       <figcaption className="mt-1.5 text-xs text-muted-foreground">
-        Sentinel-2 yearly composites ({before} vs {after}). Drag to compare. Dashed line: this area.
+        Sentinel-2 yearly composites ({before} vs {after}).{before !== requestedBefore ? ` (${requestedBefore} had no usable imagery here.)` : ""} Drag to compare. Dashed line: this area.
       </figcaption>
     </figure>
   );

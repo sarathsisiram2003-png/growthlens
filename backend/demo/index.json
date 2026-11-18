@@ -1,0 +1,42 @@
+[
+ {
+  "slug": "bengaluru",
+  "city": "Bengaluru, Karnataka, India",
+  "label": "Bengaluru",
+  "result_id": "bengaluru-karnataka-india_cafe_9832618eab",
+  "query": "A specialty café for college students",
+  "n_areas": 942,
+  "data_quality": "good",
+  "generated_at": "2026-11-18T07:47:07.817631+00:00"
+ },
+ {
+  "slug": "dubai",
+  "city": "Dubai, United Arab Emirates",
+  "label": "Dubai",
+  "result_id": "dubai-united-arab-emirates_cafe_9832618eab",
+  "query": "A specialty café for college students",
+  "n_areas": 1195,
+  "data_quality": "caution",
+  "generated_at": "2026-11-18T08:06:26.006620+00:00"
+ },
+ {
+  "slug": "london",
+  "city": "London, England, United Kingdom",
+  "label": "London",
+  "result_id": "london-england-united-kingdom_cafe_9832618eab",
+  "query": "A specialty café for college students",
+  "n_areas": 2411,
+  "data_quality": "caution",
+  "generated_at": "2026-11-18T08:32:57.096456+00:00"
+ },
+ {
+  "slug": "pune",
+  "city": "Pune, Maharashtra, India",
+  "label": "Pune",
+  "result_id": "pune-maharashtra-india_cafe_9832618eab",
+  "query": "A specialty café for college students",
+  "n_areas": 1164,
+  "data_quality": "caution",
+  "generated_at": "2026-11-18T08:38:54.693384+00:00"
+ }
+]

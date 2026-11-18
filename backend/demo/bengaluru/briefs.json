@@ -1,0 +1,62 @@
+{
+ "8860145949fffff": {
+  "why_here": "Sadashiva Nagara ranks first in Bengaluru for a specialty cafe with an overall score of 84 out of 100, which ranks areas rather than predicting success. It shows very high demand and growth signals in the city at the 96th and 95th percentiles respectively, alongside 26 weighted demand drivers in the area including 34 colleges and multiple research institutions. Competition within the area is recorded as 0, supported by a competition signal percentile of 67.",
+  "risks": "There are zero competitors directly in the area, which may indicate either a genuine market gap or thin OpenStreetMap coverage, though the coverage share is 85.5 percent. While there are no data quality flags, the access signal is relatively low at the 45th percentile with only 2 transit stops in the area. Additionally, there are 20 competitors located within 1200 meters.",
+  "suggested_format": "A small to medium specialty cafe format is a sensible option to test local demand, though this should be validated against the surrounding competition within 1200 meters.",
+  "source": "llm"
+ },
+ "8860169625fffff": {
+  "why_here": "Raja Kempegowda Ward ranks second in Bengaluru for a specialty café with a score of 81 out of 100, driven by top-tier growth and demand signals both at the 99th percentile. The area features strong activity at the 77th percentile and benefits from a high concentration of demand drivers, including 21 colleges nearby. Note that scores and percentiles rank areas within the city and do not predict success.",
+  "risks": "There are zero competitors recorded directly in the area, but given OpenStreetMap coverage of 85.5 percent, this count of zero may indicate a genuine gap or thin coverage. Additionally, access is low at the 12th percentile with zero transit stops in the area, and two competitors operate within 1200 meters.",
+  "suggested_format": "Consider a compact format or kiosk to validate footfall in this lower-access area given the nearby student population.",
+  "source": "llm"
+ },
+ "8861892189fffff": {
+  "why_here": "Kadugodi ranks 3 out of all areas in Bengaluru with a score of 78 out of 100, reflecting strong overall placement relative to the city. It shows high activity at the 100th percentile, growth at the 91st percentile, and access at the 96th percentile, supported by 12 transit stops and 11 demand drivers within the area.",
+  "risks": "Competition is relatively high, as the competition signal is at the 27th percentile (where higher means fewer competitors) and there are 5 competitors within 1,200 meters. The area has an OpenStreetMap coverage share of 0.855, so coverage is not absolute.",
+  "suggested_format": "A standard specialty cafe layout that aligns with the nearby demand drivers such as companies and colleges is a sensible format to test and validate in this location.",
+  "source": "llm"
+ },
+ "8860145b35fffff": {
+  "why_here": "Malleshwaram ranks fourth in Bengaluru with a score of 77 out of 100, which ranks areas rather than predicting success. It shows strong demand at the 94th percentile, supported by 22 demand drivers in the area including 37 colleges and 15 government buildings within 1200 meters. Activity is also high at the 83rd percentile with 9 transit stops.",
+  "risks": "Competition is dense locally with 22 competitors within 1200 meters, even though the broader area signal percentile is 27. The local competitor count of 1.0 contrasts with the 22 found within 1200 meters, which may indicate coverage variations.",
+  "suggested_format": "A small specialty café format should be tested to validate local footfall against nearby competitors like One more coffee and Got Tea.",
+  "source": "llm"
+ },
+ "88601451e3fffff": {
+  "why_here": "Hemmigepura ranks 5th out of all areas in Bengaluru for a specialty café with a score of 76 out of 100. This score ranks the area relative to others in the city and does not predict success. The area shows strong activity and growth signals at the 96th and 84th percentiles respectively, supported by 6 demand drivers including IBS Business School and Fiscal Policy Institute.",
+  "risks": "There are 0 competitors recorded in the area, which may mean a genuine gap or thin OpenStreetMap coverage given the 0.855 coverage share. Additionally, access scores are relatively low at the 45th percentile, with only 2 transit stops in the area.",
+  "suggested_format": "Consider a standard café format, framed as a suggestion to validate against local conditions and footfall patterns.",
+  "source": "llm"
+ },
+ "8860145b43fffff": {
+  "why_here": "Nehru Nagar ranks 6th in Bengaluru with a score of 76 out of 100, driven by very high city percentiles in activity at 94, demand at 98, and access at 94. These scores rank areas relative to this city and do not predict success. The immediate area includes 44 weighted demand drivers, supported by nearby anchors such as Maharani Cluster University and VHD Home Science College.",
+  "risks": "Competition is relatively dense within 1200 meters, featuring 14 competitors including Cafe Coffee Day and ner.lu, while the local area contains 1.0 competitor which may reflect a genuine gap or thin OpenStreetMap coverage given the 0.855 coverage share. The growth signal percentile sits at 71.",
+  "suggested_format": "A small specialty café format of around 500 to 800 square feet is a sensible option to test local demand near the university and college footfall.",
+  "source": "llm"
+ },
+ "8861892dd5fffff": {
+  "why_here": "Sampigehalli ranks 7th out of all city areas with a score of 76 out of 100, which ranks areas relative to the city and does not predict success. It shows high activity and demand percentiles of 83 and 84 respectively, supported by 10 weighted demand drivers in the area including 20 companies and 6 colleges within 1200 meters.",
+  "risks": "There are 0 competitors recorded directly in the area, which may mean a genuine gap or thin OpenStreetMap coverage given the 0.855 coverage share. Within 1200 meters, there are 4 established competitors including Starbucks and Third Wave Coffee Roasters.",
+  "suggested_format": "A small to medium specialty café format is a sensible option to test local demand against nearby established chains.",
+  "source": "llm"
+ },
+ "8861892199fffff": {
+  "why_here": "S.M Krishna Ward ranks 8th in Bengaluru for a specialty cafe with a score of 75 out of 100, driven by very high activity in the area at the 98th percentile. Growth and demand also rank strongly at the 82nd and 76th percentiles respectively, supported by 6 weighted demand drivers including multiple companies and colleges nearby.",
+  "risks": "There are 0 competitors recorded directly in the area, which may indicate a genuine market gap or thin OpenStreetMap coverage given the coverage share of 0.855. Additionally, access ranks low in the city at the 32nd percentile with only 1 transit stop in the area. Note that scores and percentiles rank areas relative to the city and do not predict success.",
+  "suggested_format": "A standard specialty cafe format should be considered to validate customer flow, keeping in mind the limited local transit access and surrounding corporate presence.",
+  "source": "llm"
+ },
+ "8860145905fffff": {
+  "why_here": "HMT Ward ranks 9th in Bengaluru with a score of 74 out of 100, driven by top-tier growth at the 98th percentile and strong access at the 89th percentile. It features 5 weighted demand drivers in the area, including 4 colleges and 1 library, alongside 8 transit stops.",
+  "risks": "There are 0 competitors recorded in the area and within 1200 meters, which may indicate a genuine market gap or thin OpenStreetMap coverage since the coverage share is 85.5 percent. Activity is also relatively low in the city at the 38th percentile. Scores and percentiles are relative to Bengaluru and rank areas rather than predict success.",
+  "suggested_format": "A compact café format could be suitable to test demand near the local educational institutions and transit stops.",
+  "source": "llm"
+ },
+ "886189218bfffff": {
+  "why_here": "S.M Krishna Ward ranks 10th in Bengaluru with a score of 74 out of 100, driven by the highest activity level percentile in the city at 100 and strong growth at the 89th percentile. It features 3 competitors in the area alongside 11 demand drivers, supported by nearby corporate presences such as Airbus India Private Limited and Swiggy. These scores and percentiles rank areas relative to this city and do not predict success.",
+  "risks": "Competition percentile is low at 11, indicating a high density of rivals, with 8 competitors within 1200 meters including major chains like Blue Tokai Coffee Roasters and Third Wave Coffee Roasters. While data quality flags are empty, OpenStreetMap coverage is 0.855, which means competitor counts may be affected by thin coverage.",
+  "suggested_format": "A compact specialty café format focusing on speed for the corporate workforce should be tested to validate local demand.",
+  "source": "llm"
+ }
+}

@@ -7,7 +7,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from . import history
+from . import demo, history
 from .brief import build_brief
 from .geocode import reverse_area
 from .grid import is_hex
@@ -20,6 +20,7 @@ from .satellite import EarthEngineError
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    demo.install()  # make the pre-computed demo cities available (results, imagery, briefs, history)
     recover()  # re-queue jobs a restart interrupted; drop expired ones
     yield
 
@@ -40,6 +41,20 @@ class JobRequest(BaseModel):
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/demo")
+def demo_list() -> list[dict]:
+    """The pre-computed demo cities (instant, no live data services needed)."""
+    return [{k: e[k] for k in ("slug", "city", "label", "result_id")} for e in demo.index()]
+
+
+@app.get("/demo/{slug}")
+def demo_result(slug: str) -> dict:
+    result = demo.load_result(slug)
+    if result is None:
+        raise HTTPException(404, "Unknown demo city.")
+    return result
 
 
 @app.get("/intent", dependencies=[Depends(limit("intent"))])

@@ -42,3 +42,6 @@ next-env.d.ts
 
 # copied from node_modules by scripts/copy-maplibre.mjs
 /public/maplibre/
+
+# keep the example env file (the scaffold ignores every .env*)
+!.env.example

@@ -14,3 +14,6 @@ backend/data/output/*_??????????.json
 
 # job store (runtime state)
 backend/data/jobs.sqlite*
+
+# scratch logs from long runs
+docs/_*.log

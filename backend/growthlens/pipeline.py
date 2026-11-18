@@ -28,6 +28,10 @@ def _noop(_step: str, _msg: str, _meta: dict | None = None) -> None:
     pass
 
 
+def _mean(values: list[float]) -> float | None:
+    return sum(values) / len(values) if values else None
+
+
 def slug(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
 
@@ -126,6 +130,7 @@ def run_pipeline(
             n_areas=len(cells), resolution=res, osm_coverage=osm["coverage"], n_competitors=osm["n_competitors"],
             n_demand_places=len(osm["places"]["drivers"]), tiles_failed=osm["tiles"]["failed"],
             tiles_total=osm["tiles"]["total"], approximate_boundary=city.approximate, extra_flags=flags,
+            mean_growth=_mean([v for v in sat["growth"].values() if v is not None]),
         ),
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "disclaimer": "Scores are relative to this city and rank areas; they are not a guarantee of success.",

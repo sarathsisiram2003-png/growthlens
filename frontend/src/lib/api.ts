@@ -87,6 +87,25 @@ export async function searchCities(q: string, signal?: AbortSignal): Promise<Cit
   return placesOnly(data.results ?? []).slice(0, 6);
 }
 
+export interface DemoInfo {
+  slug: string;
+  city: string;
+  label: string;
+  result_id: string;
+}
+
+let demosPromise: Promise<DemoInfo[]> | null = null;
+/** The pre-computed demo cities. Cached for the session; an empty list if the server can't be reached. */
+export function getDemos(): Promise<DemoInfo[]> {
+  demosPromise ??= request<DemoInfo[]>("/demo", undefined, 8_000).catch(() => {
+    demosPromise = null; // try again next time
+    return [];
+  });
+  return demosPromise;
+}
+
+export const getDemo = (slug: string) => request<AnalysisResult>(`/demo/${slug}`, undefined, 30_000);
+
 export const getBrief = (resultId: string, hex: string) =>
   request<Brief>(`/results/${resultId}/brief/${hex}`, undefined, 90_000); // the LLM can be slow
 

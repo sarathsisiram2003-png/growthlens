@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     ee_project: str = ""
     ee_service_account_key: str = ""
     ee_service_account_email: str = ""
+    # Whole service-account key JSON as an env var (for hosts without a persistent secret file, e.g. Render/Railway)
+    ee_service_account_json: str = ""
     http_user_agent: str = "GrowthLens/0.1 (portfolio project)"
 
     # LLM intent parsing (Google Gemini). Empty key -> offline preset fallback.

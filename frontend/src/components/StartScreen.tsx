@@ -1,10 +1,12 @@
 "use client";
 
-import { useId, useState } from "react";
+import Link from "next/link";
+import { useEffect, useId, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import CityAutocomplete from "@/components/CityAutocomplete";
+import { getDemos, type DemoInfo } from "@/lib/api";
 
 const EXAMPLES = [
   { chip: "Café", text: "A specialty café for college students" },
@@ -15,20 +17,23 @@ const EXAMPLES = [
   { chip: "Supermarket", text: "Neighbourhood supermarket" },
 ];
 
-const DEMOS = [
-  { name: "Bengaluru", city: "Bengaluru, Karnataka, India" },
-  { name: "Dubai", city: "Dubai, United Arab Emirates" },
-  { name: "London", city: "London, England, United Kingdom" },
-];
-const DEMO_QUERY = "A specialty café for college students";
 
 interface Props {
   initialCity?: string;
   initialQuery?: string;
   onSubmit: (city: string, query: string) => void;
+  onDemo: (demo: DemoInfo) => void;
 }
 
-export default function StartScreen({ initialCity = "", initialQuery = "", onSubmit }: Props) {
+export default function StartScreen({ initialCity = "", initialQuery = "", onSubmit, onDemo }: Props) {
+  const [demos, setDemos] = useState<DemoInfo[]>([]);
+  useEffect(() => {
+    let live = true;
+    void getDemos().then((d) => live && setDemos(d));
+    return () => {
+      live = false;
+    };
+  }, []);
   const [city, setCity] = useState(initialCity);
   const [query, setQuery] = useState(initialQuery);
   const queryId = useId();
@@ -95,23 +100,26 @@ export default function StartScreen({ initialCity = "", initialQuery = "", onSub
 
         <p className="mt-4 text-xs leading-relaxed text-muted-foreground">
           Scores are relative to the city and rank areas using satellite growth, competition and demand signals.
-          They are decision support, not a guarantee of success.
+          They are decision support, not a guarantee of success.{" "}
+          <Link href="/methodology" className="text-primary underline underline-offset-2">How it works and how we tested it</Link>.
         </p>
       </section>
 
-      <div className="pointer-events-auto mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
-        <span className="text-muted-foreground">Try</span>
-        {DEMOS.map((d) => (
-          <button
-            key={d.name}
-            type="button"
-            onClick={() => onSubmit(d.city, DEMO_QUERY)}
-            className="glass min-h-11 rounded-full px-4 transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          >
-            {d.name}
-          </button>
-        ))}
-      </div>
+      {demos.length > 0 && (
+        <div className="pointer-events-auto mt-4 flex flex-wrap items-center justify-center gap-2 text-sm">
+          <span className="text-muted-foreground">Try an instant demo</span>
+          {demos.map((d) => (
+            <button
+              key={d.slug}
+              type="button"
+              onClick={() => onDemo(d)}
+              className="glass min-h-11 rounded-full px-4 transition-colors hover:bg-primary/15 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              {d.label}
+            </button>
+          ))}
+        </div>
+      )}
     </main>
   );
 }

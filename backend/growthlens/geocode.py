@@ -46,7 +46,10 @@ class City:
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=2, max=20), reraise=True)
 def _query(name: str, featuretype: str | None = None) -> list[dict]:
     _throttle()
-    params = {"q": name, "format": "jsonv2", "polygon_geojson": 1, "addressdetails": 1, "extratags": 1, "limit": 8}
+    params = {
+        "q": name, "format": "jsonv2", "polygon_geojson": 1, "addressdetails": 1, "extratags": 1, "limit": 8,
+        "accept-language": "en",
+    }
     if featuretype:
         params["featuretype"] = featuretype  # e.g. "city": only settlements
     r = httpx.get(
@@ -158,7 +161,7 @@ _AREA_KEYS = ("neighbourhood", "suburb", "quarter", "city_district", "residentia
 
 def reverse_area(lat: float, lon: float) -> str | None:
     """Human-readable area name for a point (suburb/neighbourhood level). Never raises."""
-    key = f"reverse:{lat:.4f},{lon:.4f}"
+    key = f"reverse:en:{lat:.4f},{lon:.4f}"  # "en": names in English where OSM has them (older keys held local-script names)
     cached = cache.get(key)
     if cached is not None:
         return cached or None
@@ -166,7 +169,7 @@ def reverse_area(lat: float, lon: float) -> str | None:
         _throttle()
         r = httpx.get(
             NOMINATIM_REVERSE_URL,
-            params={"lat": lat, "lon": lon, "format": "jsonv2", "zoom": 14, "addressdetails": 1},
+            params={"lat": lat, "lon": lon, "format": "jsonv2", "zoom": 14, "addressdetails": 1, "accept-language": "en"},
             headers={"User-Agent": settings.http_user_agent},
             timeout=20,
         )

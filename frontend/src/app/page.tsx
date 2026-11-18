@@ -16,6 +16,7 @@ import TopBar from "@/components/TopBar";
 import { useAnalysis } from "@/hooks/useAnalysis";
 import { MAX_COMPARE, useResultsState } from "@/hooks/useResultsState";
 import type { MapPadding } from "@/components/MapView";
+import type { DemoInfo } from "@/lib/api";
 
 // MapLibre / deck.gl need the browser, so the map is client-only.
 const MapView = dynamic(() => import("@/components/MapView"), {
@@ -36,7 +37,7 @@ function useIsDesktop() {
 }
 
 export default function Home() {
-  const { phase, job, result, error, start, reset } = useAnalysis();
+  const { phase, job, result, error, start, loadDemo, reset } = useAnalysis();
   const rs = useResultsState(result);
   const [form, setForm] = useState({ city: "", query: "" });
   const [formKey, setFormKey] = useState(0); // re-mounts the start form when returning to edit
@@ -46,6 +47,11 @@ export default function Home() {
     setForm({ city, query });
     rs.resetAll();
     void start(city, query);
+  };
+  const runDemo = (demo: DemoInfo) => {
+    setForm({ city: demo.city, query: "A specialty café for college students" });
+    rs.resetAll();
+    void loadDemo(demo.slug);
   };
   const edit = () => {
     reset();
@@ -116,7 +122,7 @@ export default function Home() {
         />
 
         {phase === "start" && (
-          <StartScreen key={formKey} initialCity={form.city} initialQuery={form.query} onSubmit={run} />
+          <StartScreen key={formKey} initialCity={form.city} initialQuery={form.query} onSubmit={run} onDemo={runDemo} />
         )}
 
         {phase === "analysing" && <AnalysingPanel job={job} city={form.city} onEdit={edit} />}
