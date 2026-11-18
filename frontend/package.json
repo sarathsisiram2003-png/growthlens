@@ -10,7 +10,8 @@
     "predev": "node scripts/copy-maplibre.mjs",
     "prebuild": "node scripts/copy-maplibre.mjs",
     "postinstall": "node scripts/copy-maplibre.mjs",
-    "test": "vitest run"
+    "test": "vitest run",
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
