@@ -41,21 +41,30 @@ export const createJob = (city: string, query: string) =>
     body: JSON.stringify({ city, query }),
   });
 
+export const cancelJob = (id: string) => request<JobStatus>(`/jobs/${id}/cancel`, { method: "POST" }, 10_000);
+
 export const getJob = (id: string) => request<JobStatus>(`/jobs/${id}`);
 
 // Results are a few hundred KB; allow more time.
 export const getResult = (id: string) => request<AnalysisResult>(`/jobs/${id}/result`, undefined, 60_000);
 
-/** City autocomplete via Open-Meteo's geocoder (built for search-as-you-type; Nominatim forbids it). */
-export async function searchCities(q: string, signal?: AbortSignal): Promise<CityOption[]> {
-  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=6&language=en&format=json`;
-  const res = await fetch(url, { signal });
-  if (!res.ok) return [];
-  const data = (await res.json()) as {
-    results?: { name: string; admin1?: string; country?: string; latitude: number; longitude: number }[];
-  };
+interface GeoResult {
+  name: string;
+  admin1?: string;
+  country?: string;
+  latitude: number;
+  longitude: number;
+  feature_code?: string;
+}
+
+/**
+ * Keep populated places (cities, towns, villages) and drop regions, countries and other features: analysing a whole
+ * state or country isn't supported, so we don't offer them. Duplicate labels are removed.
+ */
+export function placesOnly(results: GeoResult[]): CityOption[] {
   const seen = new Set<string>();
-  return (data.results ?? [])
+  return results
+    .filter((r) => !r.feature_code || r.feature_code.startsWith("PPL"))
     .map((r) => ({
       label: [r.name, r.admin1, r.country].filter(Boolean).join(", "),
       name: r.name,
@@ -67,6 +76,15 @@ export async function searchCities(q: string, signal?: AbortSignal): Promise<Cit
       seen.add(o.label);
       return true;
     });
+}
+
+/** City autocomplete via Open-Meteo's geocoder (built for search-as-you-type; Nominatim forbids it). */
+export async function searchCities(q: string, signal?: AbortSignal): Promise<CityOption[]> {
+  const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=10&language=en&format=json`;
+  const res = await fetch(url, { signal });
+  if (!res.ok) return [];
+  const data = (await res.json()) as { results?: GeoResult[] };
+  return placesOnly(data.results ?? []).slice(0, 6);
 }
 
 export const getBrief = (resultId: string, hex: string) =>

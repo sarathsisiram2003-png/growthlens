@@ -1,14 +1,16 @@
 """OpenStreetMap counts per H3 hex via the Overpass API (cached, retried, polite)."""
 import hashlib
 import json
+import math
 import time
 from collections import defaultdict
+from collections.abc import Callable
 
 import httpx
 
 from . import cache
 from .config import settings
-from .grid import point_to_hex
+from .grid import hex_centre, point_to_hex
 
 # Public mirrors, tried in rotation. The main server is often at capacity.
 OVERPASS_URLS = [
@@ -51,8 +53,12 @@ def _post(url: str, query: str) -> list[dict]:
     return data.get("elements", [])
 
 
-def fetch_elements(bbox: tuple[float, float, float, float], tags: list[Tag]) -> list[dict]:
-    """One Overpass request for all tags, with mirror rotation, a hard deadline and a stale-cache fallback."""
+def fetch_elements(
+    bbox: tuple[float, float, float, float], tags: list[Tag], heartbeat: Callable[[], None] | None = None
+) -> list[dict]:
+    """One Overpass request for all tags, with mirror rotation, a hard deadline and a stale-cache fallback.
+
+    `heartbeat` is called before every attempt; it may raise (e.g. job cancelled / timed out) to stop waiting."""
     query = build_query(bbox, tags)
     key = "overpass:" + hashlib.sha1(query.encode()).hexdigest()
     cached = cache.get(key, CACHE_MAX_AGE)
@@ -65,6 +71,8 @@ def fetch_elements(bbox: tuple[float, float, float, float], tags: list[Tag]) -> 
         for url in OVERPASS_URLS:
             if time.time() - start > DEADLINE_S:
                 break
+            if heartbeat:
+                heartbeat()
             try:
                 elements = _post(url, query)
             except (httpx.HTTPError, ValueError, OverpassError) as e:  # ValueError covers bad JSON
@@ -82,6 +90,75 @@ def fetch_elements(bbox: tuple[float, float, float, float], tags: list[Tag]) -> 
     if stale is not None:
         return stale
     raise OverpassError(f"All Overpass endpoints failed: {last}")
+
+
+# ---- tiling: big cities are fetched in pieces so no single Overpass query is huge ----
+SINGLE_MAX_DEG = 0.35  # cities up to ~39 km across use one request (keeps earlier cache entries valid)
+TILE_DEG = 0.2
+TILE_PAD = 0.02  # overlap so places near a tile edge are not lost
+MAX_FAILED_FRACTION = 0.34  # tolerate a few failed tiles (flagged); more than this and we give up
+CONSECUTIVE_FAIL_LIMIT = 2  # two tiles in a row failing means Overpass is down: stop early
+TOTAL_DEADLINE_S = 20 * 60
+
+Bbox = tuple[float, float, float, float]
+
+
+def plan_tiles(bbox: Bbox, centres: list[tuple[float, float]]) -> list[Bbox]:
+    """bbox = (south, west, north, east). Returns query boxes covering every area centre."""
+    s, w, n, e = bbox
+    if (n - s) <= SINGLE_MAX_DEG and (e - w) <= SINGLE_MAX_DEG:
+        return [bbox]
+    rows = max(1, math.ceil((n - s) / TILE_DEG))
+    cols = max(1, math.ceil((e - w) / TILE_DEG))
+    used = {
+        (min(int((lat - s) / TILE_DEG), rows - 1), min(int((lon - w) / TILE_DEG), cols - 1))
+        for lat, lon in centres
+    }
+    return [
+        (
+            round(s + r * TILE_DEG - TILE_PAD, 5), round(w + c * TILE_DEG - TILE_PAD, 5),
+            round(min(s + (r + 1) * TILE_DEG, n) + TILE_PAD, 5), round(min(w + (c + 1) * TILE_DEG, e) + TILE_PAD, 5),
+        )
+        for r, c in sorted(used)
+    ]
+
+
+def fetch_tiled(
+    bbox: Bbox, tags: list[Tag], centres: list[tuple[float, float]], progress: Callable[[str], None] | None = None
+) -> tuple[list[dict], dict]:
+    """Fetch all tiles, de-duplicating places that fall in overlapping tiles.
+
+    Returns (elements, {"total": n_tiles, "failed": n_failed}). Raises OverpassError if too many tiles fail.
+    """
+    tiles = plan_tiles(bbox, centres)
+    beat = (lambda: progress("Reading OpenStreetMap")) if progress else None  # keeps cancel/timeout responsive
+    found: dict = {}
+    failed = consecutive = 0
+    last: Exception | None = None
+    start = time.time()
+    for i, tile in enumerate(tiles):
+        if time.time() - start > TOTAL_DEADLINE_S:
+            failed += len(tiles) - i
+            break
+        if progress and len(tiles) > 1:
+            progress(f"Reading OpenStreetMap, part {i + 1} of {len(tiles)}")
+        try:
+            elements = fetch_elements(tile, tags, beat)
+        except OverpassError as e:
+            failed += 1
+            consecutive += 1
+            last = e
+            if consecutive >= CONSECUTIVE_FAIL_LIMIT:
+                failed += len(tiles) - i - 1
+                break
+            continue
+        consecutive = 0
+        for el in elements:
+            key = (el.get("type"), el["id"]) if "id" in el else id(el)
+            found[key] = el
+    if failed / len(tiles) > MAX_FAILED_FRACTION:
+        raise OverpassError(f"OpenStreetMap data could not be loaded ({failed} of {len(tiles)} parts failed): {last}")
+    return list(found.values()), {"total": len(tiles), "failed": failed}
 
 
 def element_latlon(el: dict) -> tuple[float, float] | None:
@@ -140,7 +217,9 @@ def collect_places(elements: list[dict], comp_w: dict, dem_w: dict, hexset: set[
     return {"competitors": competitors, "drivers": drivers}
 
 
-def osm_metrics(bbox, hexes: list[str], profile: dict, resolution: int) -> dict:
+def osm_metrics(
+    bbox, hexes: list[str], profile: dict, resolution: int, progress: Callable[[str], None] | None = None
+) -> dict:
     """Returns competitor/demand/access counts per hex plus a data-quality summary."""
     hexset = set(hexes)
     comp_w = {t: 1.0 for t in profile["competitors"]}
@@ -148,7 +227,8 @@ def osm_metrics(bbox, hexes: list[str], profile: dict, resolution: int) -> dict:
     dem_w = profile["demand"]
 
     all_tags = list(dict.fromkeys([*comp_w, *dem_w, *acc_w]))  # unique, order kept
-    elements = fetch_elements(bbox, all_tags)  # a single request; each count below ignores non-matching places
+    # One query per tile for all tags; each count below ignores non-matching places.
+    elements, tiles = fetch_tiled(bbox, all_tags, [hex_centre(h) for h in hexes], progress)
 
     competitors = count_per_hex(elements, comp_w, hexset, resolution)
     demand = count_per_hex(elements, dem_w, hexset, resolution)
@@ -158,6 +238,7 @@ def osm_metrics(bbox, hexes: list[str], profile: dict, resolution: int) -> dict:
     covered = len(set(competitors) | set(demand) | set(access))
     return {
         "places": collect_places(elements, comp_w, dem_w, hexset, resolution),
+        "tiles": tiles,
         "competitors": competitors,
         "demand": demand,
         "access": access,

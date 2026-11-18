@@ -1,8 +1,9 @@
 """FastAPI app. Jobs run in the background; the frontend polls for progress."""
 import json
 import os
+from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, Query, Response
+from fastapi import Depends, FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -12,11 +13,18 @@ from .geocode import reverse_area
 from .grid import is_hex
 from .imagery import ImageryError, thumbnail_png, valid_year
 from .intent import parse_intent
-from .jobs import get_job, start_job
+from .jobs import cancel_job, get_job, recover, start_job
+from .ratelimit import limit
 from .results import ResultNotFound, find_hex, load_result
 from .satellite import EarthEngineError
 
-app = FastAPI(title="GrowthLens API", version="0.4.0")
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    recover()  # re-queue jobs a restart interrupted; drop expired ones
+    yield
+
+
+app = FastAPI(title="GrowthLens API", version="0.5.0", lifespan=lifespan)
 
 # Frontend origins; override in production with CORS_ORIGINS="https://app.example.com,..."
 _origins = os.environ.get("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
@@ -26,6 +34,7 @@ app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in _origins], 
 class JobRequest(BaseModel):
     city: str = Field(min_length=2, max_length=200)
     query: str = Field(min_length=2, max_length=300)
+    refresh: bool = False  # ignore the cached result and recompute
 
 
 @app.get("/health")
@@ -33,7 +42,7 @@ def health() -> dict:
     return {"status": "ok"}
 
 
-@app.get("/intent")
+@app.get("/intent", dependencies=[Depends(limit("intent"))])
 def intent(query: str = Query(..., max_length=300)) -> dict:
     """Preview what the AI understood (shown on the Analysing screen)."""
     try:
@@ -43,16 +52,25 @@ def intent(query: str = Query(..., max_length=300)) -> dict:
     return {"intent": parsed.model_dump(), "warning": warning}
 
 
-@app.post("/jobs", status_code=202)
+@app.post("/jobs", status_code=202, dependencies=[Depends(limit("jobs"))])
 def create_job(req: JobRequest) -> dict:
-    return start_job(req.city, req.query).public()
+    return start_job(req.city, req.query, req.refresh).public()
 
 
 @app.get("/jobs/{job_id}")
 def job_status(job_id: str) -> dict:
     job = get_job(job_id)
     if job is None:
-        raise HTTPException(404, "Unknown job (the server may have restarted). Please search again.")
+        raise HTTPException(404, "Unknown or expired job. Please search again.")
+    return job.public()
+
+
+@app.post("/jobs/{job_id}/cancel")
+def job_cancel(job_id: str) -> dict:
+    """Stop an analysis the user walked away from (only if nobody else is waiting on the same search)."""
+    job = cancel_job(job_id)
+    if job is None:
+        raise HTTPException(404, "Unknown or expired job.")
     return job.public()
 
 
@@ -63,6 +81,8 @@ def job_result(job_id: str) -> dict:
         raise HTTPException(404, "Unknown job. Please search again.")
     if job.status != "done" or job.result_path is None:
         raise HTTPException(409, f"Job is {job.status}")
+    if not job.result_path.exists():
+        raise HTTPException(404, "That result has expired. Please search again.")
     return json.loads(job.result_path.read_text(encoding="utf-8"))
 
 
@@ -78,7 +98,7 @@ def get_result(result_id: str) -> dict:
     return _result(result_id)
 
 
-@app.get("/results/{result_id}/brief/{hex_id}")
+@app.get("/results/{result_id}/brief/{hex_id}", dependencies=[Depends(limit("brief"))])
 def location_brief(result_id: str, hex_id: str) -> dict:
     """AI-written brief for one area (falls back to a template if the LLM is unavailable)."""
     result = _result(result_id)
@@ -89,7 +109,7 @@ def location_brief(result_id: str, hex_id: str) -> dict:
     return build_brief(result, row).model_dump()
 
 
-@app.post("/results/{result_id}/history", status_code=202)
+@app.post("/results/{result_id}/history", status_code=202, dependencies=[Depends(limit("history"))])
 def start_history(result_id: str) -> dict:
     try:
         st = history.start(result_id)
@@ -104,7 +124,7 @@ def get_history(result_id: str) -> dict:
     return history.get_status(result_id)
 
 
-@app.get("/imagery/{hex_id}")
+@app.get("/imagery/{hex_id}", dependencies=[Depends(limit("imagery"))])
 def imagery(hex_id: str, year: int = Query(...)) -> Response:
     """Sentinel-2 annual composite for one area, as PNG (cached; first request per image takes a few seconds)."""
     if not is_hex(hex_id):
@@ -118,6 +138,6 @@ def imagery(hex_id: str, year: int = Query(...)) -> Response:
     return Response(png, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
 
 
-@app.get("/area-name")
+@app.get("/area-name", dependencies=[Depends(limit("area_name"))])
 def area_name(lat: float = Query(..., ge=-90, le=90), lon: float = Query(..., ge=-180, le=180)) -> dict:
     return {"name": reverse_area(lat, lon)}

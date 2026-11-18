@@ -87,7 +87,14 @@ export default function AnalysingPanel({ job, city, onEdit }: Props) {
           </li>
         ))}
       </ol>
-      {job?.message && <p className="mt-3 truncate text-xs text-muted-foreground">{job.message}</p>}
+      {job?.status === "queued" && (
+        <p role="status" className="mt-3 text-xs text-muted-foreground">
+          {job.queue_position
+            ? `Waiting for a free worker. You are number ${job.queue_position} in line.`
+            : "Waiting for a free worker…"}
+        </p>
+      )}
+      {job?.message && job.status !== "queued" && <p className="mt-3 truncate text-xs text-muted-foreground">{job.message}</p>}
       <SlowHint key={steps.find((s) => s.state === "active")?.id ?? "none"} />
 
       {job?.intent && <Understood intent={job.intent} />}
@@ -98,7 +105,7 @@ export default function AnalysingPanel({ job, city, onEdit }: Props) {
       )}
 
       <Button variant="ghost" className="mt-4 h-11 px-3" onClick={onEdit}>
-        Edit search
+        Cancel and edit search
       </Button>
     </aside>
   );

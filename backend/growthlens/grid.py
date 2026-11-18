@@ -1,4 +1,6 @@
 """H3 grid helpers."""
+import math
+
 import h3
 from shapely.geometry import Polygon, mapping
 from shapely.geometry.base import BaseGeometry
@@ -40,3 +42,57 @@ def is_hex(cell: str, resolution: int | None = None) -> bool:
         return h3.is_valid_cell(cell) and (resolution is None or h3.get_resolution(cell) == resolution)
     except (ValueError, TypeError):
         return False
+
+
+class AreaTooLarge(ValueError):
+    """Raised when a boundary is too big to analyse in detail. The message is shown to the user."""
+
+    def __init__(self, area_km2: float):
+        super().__init__(
+            f"That area is about {area_km2:,.0f} km², too large to analyse in detail. "
+            "Try a specific city, town or district."
+        )
+        self.area_km2 = area_km2
+
+
+def estimate_area_km2(boundary: BaseGeometry) -> float:
+    """Rough area from degrees (good enough to pick a grid resolution)."""
+    minx, miny, maxx, maxy = boundary.bounds
+    return boundary.area * (111.32**2) * max(math.cos(math.radians((miny + maxy) / 2)), 0.05)
+
+
+def choose_resolution(
+    boundary: BaseGeometry, preferred: int = 8, min_hexes: int = 40, max_hexes: int = 3500,
+    max_area_km2: float = 12000,
+) -> tuple[int, list[str]]:
+    """Pick an H3 resolution so the grid has between ~min_hexes and max_hexes areas.
+
+    Small towns get a finer grid (up to res 9, ~0.1 km2); big metros a coarser one (down to res 5).
+    Areas that would still exceed max_hexes at res 5 are refused before any expensive polygon work.
+    """
+    area = estimate_area_km2(boundary)
+    if area > max_area_km2:  # a province or region, not a city: a coarse grid over it would not be useful
+        raise AreaTooLarge(area)
+
+    def est(res: int) -> float:
+        return area / h3.average_hexagon_area(res, unit="km^2")
+
+    res = preferred
+    while est(res) > max_hexes and res > 5:
+        res -= 1
+    if est(res) > max_hexes:
+        raise AreaTooLarge(area)
+    while est(res) < min_hexes and res < 9:
+        res += 1
+
+    cells = city_hexes(boundary, res)
+    # The estimate can be off for very concave shapes; tighten if the real count is well over budget.
+    while len(cells) > max_hexes * 1.25 and res > 5:
+        res -= 1
+        cells = city_hexes(boundary, res)
+    if len(cells) > max_hexes * 1.25:
+        raise AreaTooLarge(area)
+    if not cells:  # tiny boundary smaller than one cell: use the cell under its centre
+        c = boundary.representative_point()
+        cells = [h3.latlng_to_cell(c.y, c.x, res)]
+    return res, cells

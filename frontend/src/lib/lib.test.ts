@@ -150,3 +150,21 @@ describe("explain", () => {
     expect(explain("access", base({ access: 3 })).headline).toBe("3 transit stops mapped in this area");
   });
 });
+
+import { placesOnly } from "./api";
+
+describe("placesOnly (city autocomplete)", () => {
+  const r = (name: string, feature_code: string | undefined, admin1 = "X", country = "Y") => ({ name, admin1, country, latitude: 1, longitude: 2, feature_code });
+  it("keeps cities and towns, drops regions and countries", () => {
+    const out = placesOnly([r("Karnataka", "ADM1"), r("India", "PCLI"), r("Bengaluru", "PPLA"), r("Mysuru", "PPLA2"), r("Hamlet", "PPL")]);
+    expect(out.map((o) => o.name)).toEqual(["Bengaluru", "Mysuru", "Hamlet"]);
+  });
+  it("builds a label with region and country, and removes duplicates", () => {
+    const out = placesOnly([r("Pune", "PPLA2", "Maharashtra", "India"), r("Pune", "PPL", "Maharashtra", "India")]);
+    expect(out).toHaveLength(1);
+    expect(out[0].label).toBe("Pune, Maharashtra, India");
+  });
+  it("keeps results that carry no feature code", () => {
+    expect(placesOnly([r("Somewhere", undefined)])).toHaveLength(1);
+  });
+});

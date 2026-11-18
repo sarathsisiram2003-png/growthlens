@@ -19,7 +19,20 @@ class Settings(BaseSettings):
     # Set INTENT_USE_LLM=false to parse businesses with keyword presets only (briefs still use the LLM).
     intent_use_llm: bool = True
 
-    h3_resolution: int = 8
+    h3_resolution: int = 8  # preferred; adjusted per city so the grid has a sensible number of areas
+    min_hexes: int = 40  # finer grid for very small places
+    max_area_km2: float = 12000  # larger than any single city; refuse provinces/regions
+    max_hexes: int = 3500  # coarser grid / refuse beyond this (keeps Earth Engine + OSM work bounded)
+
+    # Background jobs
+    job_timeout_s: int = 25 * 60
+    job_retention_days: int = 7
+    result_max_age_days: int = 30  # older cached results are recomputed
+    job_workers: int = 2
+
+    # Rate limits (per client, sliding window). Set RATE_LIMIT_ENABLED=false for local load tests.
+    rate_limit_enabled: bool = True
+    trust_proxy: bool = False  # honour X-Forwarded-For (only behind a proxy you control)
     # Before/after satellite imagery (Sentinel-2 annual median composites)
     imagery_start_year: int = 2017
     imagery_end_year: int = 2025

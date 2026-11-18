@@ -55,13 +55,28 @@ export interface AnalysisResult {
   label: string;
   intent: Intent;
   weights: Record<Metric, number>;
-  data_quality: { osm_coverage: number; n_competitors: number; flags: string[] };
+  data_quality: DataQuality;
   windows: { growth: [number, number]; viirs: [string, string]; imagery?: [number, number] };
   disclaimer: string;
   generated_at: string;
   top10: string[];
   places: Places;
   hexes: HexRow[];
+}
+
+export type QualityLevel = "good" | "caution" | "limited";
+export type FlagSeverity = "info" | "caution" | "limited";
+
+export interface DataQuality {
+  level?: QualityLevel; // absent in results saved before Phase 5
+  flags: string[];
+  severities?: Record<string, FlagSeverity>;
+  osm_coverage: number;
+  n_competitors: number;
+  n_demand_places?: number;
+  n_areas?: number;
+  resolution?: number;
+  osm_tiles?: { total: number; failed: number };
 }
 
 export interface Brief {
@@ -90,7 +105,7 @@ export interface JobStatus {
   id: string;
   city: string;
   query: string;
-  status: "queued" | "running" | "done" | "error";
+  status: "queued" | "running" | "done" | "error" | "cancelled";
   steps: JobStep[];
   message: string;
   intent: Intent | null;
@@ -98,6 +113,7 @@ export interface JobStatus {
   meta: { boundary?: Geometry; center?: [number, number] };
   error: string | null;
   result_id: string | null;
+  queue_position: number | null;
 }
 
 export interface CityOption {

@@ -59,6 +59,7 @@ export default function StartScreen({ initialCity = "", initialQuery = "", onSub
           <div>
             <div className="mb-1.5 text-sm font-medium">Where?</div>
             <CityAutocomplete value={city} onChange={(text) => setCity(text)} onEnter={() => void 0} autoFocus />
+            <p className="mt-1 text-xs text-muted-foreground">Any city or town worldwide. Countries and states are too large to analyse.</p>
           </div>
 
           <div>

@@ -9,16 +9,17 @@ from .config import settings
 from shapely.geometry import mapping
 
 from .geocode import geocode_city, reverse_area
-from .grid import city_hexes, hex_centre
+from .grid import choose_resolution, hex_centre
 from .intent import Intent
 from .osm import osm_metrics
+from .quality import assess
 from .reasons import build_reason
 from .satellite import EarthEngineError, satellite_metrics
 from .scoring import METRICS, score_hexes, top_n
 
 # progress(step, message, meta). Steps: map, satellite, competitors, scoring, briefs.
 # meta may carry {"state": "skipped"} or {"boundary": geojson, "center": [lat, lon]}.
-SCHEMA_VERSION = 2  # bump when the result JSON gains fields the UI needs (invalidates cached files)
+SCHEMA_VERSION = 3  # bump when the result JSON gains fields the UI needs (invalidates cached files)
 
 Progress = Callable[[str, str, dict | None], None]
 
@@ -38,7 +39,6 @@ def run_pipeline(
     say = progress or _noop
     profile = intent.to_profile()
     weights = weights or profile["weights"]
-    res = settings.h3_resolution
 
     say("map", "Geocoding city", None)
     city = geocode_city(city_name)
@@ -47,10 +47,11 @@ def run_pipeline(
     boundary_geojson = mapping(city.boundary.simplify(0.0008))
     say("map", "City boundary found", {"boundary": boundary_geojson, "center": [city.lat, city.lon]})
 
-    cells = city_hexes(city.boundary, res)
-    if not cells:
-        raise RuntimeError("City boundary produced no hexagons")
-    say("map", f"{len(cells)} hexes at resolution {res}", None)
+    # Grid resolution adapts to the city: finer for small towns, coarser for big metros, refused if enormous
+    res, cells = choose_resolution(
+        city.boundary, settings.h3_resolution, settings.min_hexes, settings.max_hexes, settings.max_area_km2
+    )
+    say("map", f"{len(cells)} areas at resolution {res}", None)
 
     flags: list[str] = []
     if skip_satellite:
@@ -72,9 +73,7 @@ def run_pipeline(
                     flags.append(f"{m}_data_missing")
 
     say("competitors", "Reading OpenStreetMap (competitors, demand, access)", None)
-    osm = osm_metrics(bbox, cells, profile, res)
-    if osm["coverage"] < 0.25:
-        flags.append("thin_osm_coverage")
+    osm = osm_metrics(bbox, cells, profile, res, lambda m: say("competitors", m, None))
 
     raw = {
         "growth": {c: sat["growth"].get(c) for c in cells},
@@ -123,7 +122,11 @@ def run_pipeline(
             "viirs": [settings.viirs_start, settings.viirs_end],
             "imagery": [settings.imagery_start_year, settings.imagery_end_year],
         },
-        "data_quality": {"osm_coverage": round(osm["coverage"], 3), "n_competitors": osm["n_competitors"], "flags": flags},
+        "data_quality": assess(
+            n_areas=len(cells), resolution=res, osm_coverage=osm["coverage"], n_competitors=osm["n_competitors"],
+            n_demand_places=len(osm["places"]["drivers"]), tiles_failed=osm["tiles"]["failed"],
+            tiles_total=osm["tiles"]["total"], approximate_boundary=city.approximate, extra_flags=flags,
+        ),
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "disclaimer": "Scores are relative to this city and rank areas; they are not a guarantee of success.",
         "top10": top,

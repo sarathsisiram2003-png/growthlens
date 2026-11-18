@@ -11,3 +11,6 @@ service-account*.json
 
 # generated per-(city, intent) analysis results (hash suffix); demo cities are curated in Phase 6
 backend/data/output/*_??????????.json
+
+# job store (runtime state)
+backend/data/jobs.sqlite*

@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { AlertTriangle, CheckCircle2, ChevronUp, FileDown } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronUp, FileDown, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import RankCard from "@/components/RankCard";
 import WeightsPanel from "@/components/WeightsPanel";
-import { FLAG_MESSAGE } from "@/lib/format";
+import { FLAG_MESSAGE, QUALITY_TITLE } from "@/lib/format";
 import type { AnalysisResult, ViewRow, Weights } from "@/lib/types";
 
 interface Props {
@@ -40,8 +40,19 @@ export default function ResultsPanel({
     if (selectedHex) cardRefs.current[selectedHex]?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [selectedHex]);
 
-  const flags = result.data_quality.flags;
-  const good = flags.length === 0;
+  const dq = result.data_quality;
+  // Results saved before the quality level existed fall back to "any flag = caution"
+  const level = dq.level ?? (dq.flags.length ? "caution" : "good");
+  const badgeStyle = {
+    good: "text-emerald-600 dark:text-emerald-400",
+    caution: "text-amber-600 dark:text-amber-400",
+    limited: "text-red-600 dark:text-red-400",
+  }[level];
+  const Icon = level === "good" ? CheckCircle2 : level === "limited" ? ShieldAlert : AlertTriangle;
+  const noteStyle = (flag: string) => {
+    const sev = dq.severities?.[flag] ?? "caution";
+    return sev === "info" ? "text-muted-foreground" : sev === "limited" ? "text-red-700 dark:text-red-300" : "text-amber-700 dark:text-amber-300";
+  };
   const card = (row: ViewRow, isPinned = false) => (
     <RankCard
       key={`${isPinned ? "pin-" : ""}${row.hex}`}
@@ -84,21 +95,20 @@ export default function ResultsPanel({
             </Button>
           </div>
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
-            <Badge
-              variant="outline"
-              className={`h-6 gap-1 ${good ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}
-            >
-              {good ? <CheckCircle2 className="size-3.5" aria-hidden /> : <AlertTriangle className="size-3.5" aria-hidden />}
-              {good ? "Data quality: good" : "Data quality: check notes"}
+            <Badge variant="outline" className={`h-6 gap-1 ${badgeStyle}`}>
+              <Icon className="size-3.5" aria-hidden />
+              {QUALITY_TITLE[level]}
             </Badge>
             <span className="text-xs text-muted-foreground">
               {Math.round(result.data_quality.osm_coverage * 100)}% of areas have mapped places
             </span>
           </div>
-          {!good && (
-            <ul className="mt-2 space-y-1 text-xs text-amber-700 dark:text-amber-300">
-              {flags.map((f) => (
-                <li key={f}>{FLAG_MESSAGE[f] ?? f}</li>
+          {dq.flags.length > 0 && (
+            <ul className="mt-2 space-y-1 text-xs">
+              {dq.flags.map((f) => (
+                <li key={f} className={noteStyle(f)}>
+                  {FLAG_MESSAGE[f] ?? f}
+                </li>
               ))}
             </ul>
           )}

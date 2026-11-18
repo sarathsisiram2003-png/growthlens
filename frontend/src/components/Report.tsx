@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { imageryUrl } from "@/lib/api";
 import { scoreColor } from "@/lib/colors";
 import { explain, METRIC_SHORT, METRIC_TITLE } from "@/lib/explain";
+import { FLAG_MESSAGE, QUALITY_TITLE } from "@/lib/format";
 import { svgMap } from "@/lib/hexgeo";
 import { nearbyPlaces } from "@/lib/nearby";
 import { METRICS, normaliseWeights } from "@/lib/scoring";
@@ -53,6 +54,17 @@ export default function Report({ result, rows, top, weights, target }: Props) {
       <p className="mt-3 rounded border border-amber-300 bg-amber-50 p-2 text-xs text-amber-900">
         {result.disclaimer} Rankings combine satellite growth, night-light trend and OpenStreetMap places; OpenStreetMap coverage varies by city.
       </p>
+
+      {result.data_quality.flags.length > 0 && (
+        <section className="mt-3 break-inside-avoid rounded border border-slate-300 p-2 text-xs text-slate-700">
+          <p className="font-semibold">{QUALITY_TITLE[result.data_quality.level ?? "caution"]}</p>
+          <ul className="mt-0.5 list-disc pl-4">
+            {result.data_quality.flags.map((f) => (
+              <li key={f}>{FLAG_MESSAGE[f] ?? f}</li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {!location && (
         <>
